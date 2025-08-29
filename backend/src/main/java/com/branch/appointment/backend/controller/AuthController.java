@@ -1,5 +1,6 @@
 package com.branch.appointment.backend.controller;
 
+import com.branch.appointment.backend.dto.LoginResponse;
 import com.branch.appointment.backend.dto.RegisterUserDto;
 import com.branch.appointment.backend.service.AuthService;
 import lombok.AllArgsConstructor;
@@ -21,10 +22,17 @@ public class AuthController {
 
   @PostMapping("/register")
   public ResponseEntity<String> registerUser(@RequestBody RegisterUserDto userInfo) {
-    log.info("TEST API");
     authService.registerUser(userInfo);
 
     return ResponseEntity.status(HttpStatus.OK).body("Successfully Registered");
+  }
+
+  @PostMapping("/login")
+  public ResponseEntity<LoginResponse> loginUser(@RequestBody RegisterUserDto userInfo) {
+    String token = authService.loginUser(userInfo);
+
+    LoginResponse lr = new LoginResponse(token);
+    return ResponseEntity.status(HttpStatus.OK).body(lr);
   }
 
 }
