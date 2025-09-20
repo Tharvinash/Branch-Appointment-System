@@ -1,0 +1,24 @@
+## Theme & Styling
+- Always use Toyota Gazoo Racing color scheme
+- Primary: #EB0A1E (Red), Secondary: #000000 (Black)
+- Use Tailwind CSS v4 with @theme directive
+- Follow established component patterns
+
+## Architecture
+- Next.js 15 with App Router
+- TypeScript for type safety
+- API helpers in lib/api/
+- Modal components for forms
+- Consistent error handling and loading states
+
+## File Organization
+- Components in app/[feature]/components/
+- API helpers in lib/api/
+- Use kebab-case for file names
+- Keep related files together
+
+## Code Standards
+- Use "use client" for interactive components
+- Include proper TypeScript interfaces
+- Add loading states to all async operations
+- Use consistent error handling patterns

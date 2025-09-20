@@ -1,26 +1,74 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  /* Toyota Gazoo Racing Theme Colors */
+  --color-toyota-red: #EB0A1E;
+  --color-toyota-red-dark: #C00015;
+  --color-toyota-black: #000000;
+  --color-toyota-white: #FFFFFF;
+  --color-toyota-gray: #F5F5F5;
+  --color-toyota-gray-dark: #E5E5E5;
+  --color-toyota-text-primary: #000000;
+  --color-toyota-text-secondary: #666666;
+  --color-toyota-text-white: #FFFFFF;
+  
+  /* Font families */
+  --font-family-sans: var(--font-inter), system-ui, -apple-system, sans-serif;
+  --font-family-mono: var(--font-geist-mono), monospace;
+  
+  /* Custom spacing */
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+  --spacing-2xl: 3rem;
+  
+  /* Custom border radius */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  
+  /* Custom animations */
+  --animate-pulse-red: pulse-red 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@keyframes pulse-red {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
   }
 }
 
+/* Remove dark mode for consistent Toyota Gazoo Racing theme */
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-toyota-white);
+  color: var(--color-toyota-text-primary);
+  font-family: var(--font-inter), system-ui, -apple-system, sans-serif;
+  font-weight: 500;
+  line-height: 1.6;
+}
+
+/* Custom component styles for Toyota Gazoo Racing theme */
+@layer components {
+  /* Button styles */
+  .btn-toyota-primary {
+    @apply bg-toyota-red text-toyota-white font-semibold px-6 py-3 rounded-lg transition-colors duration-200 hover:bg-toyota-red-dark;
+  }
+  
+  .btn-toyota-secondary {
+    @apply bg-toyota-black text-toyota-white font-semibold px-6 py-3 rounded-lg transition-colors duration-200 hover:bg-gray-800;
+  }
+  
+  .btn-toyota-outline {
+    @apply border-2 border-toyota-red text-toyota-red font-semibold px-6 py-3 rounded-lg transition-colors duration-200 hover:bg-toyota-red hover:text-toyota-white;
+  }
+  
+  /* Card styles */
+  .card-toyota {
+    @apply bg-toyota-gray border border-gray-200 rounded-xl p-6 shadow-sm;
+  }
 }
