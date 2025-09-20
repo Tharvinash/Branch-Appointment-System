@@ -41,7 +41,7 @@ export default function UserHeader({ user, onLogout }: UserHeaderProps) {
             </div>
             <button
               onClick={onLogout}
-              className="btn-toyota-outline text-sm px-4 py-2 flex items-center space-x-2 hover:bg-red-600 hover:text-white transition-colors"
+              className="btn-toyota-outline text-sm px-4 py-2 flex items-center space-x-2 hover:bg-red-600 hover:text-white transition-all duration-200 ease-in-out"
             >
               <svg
                 className="w-4 h-4"

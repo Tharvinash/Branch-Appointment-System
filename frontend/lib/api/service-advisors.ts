@@ -77,7 +77,7 @@ const apiCall = async <T>(
 export const serviceAdvisorAPI = {
   // Get all service advisors
   getAllServiceAdvisors: async (): Promise<ApiResponse<ServiceAdvisor[]>> => {
-    return apiCall<ServiceAdvisor[]>("/api/admin/service-advisors");
+    return getAllServiceAdvisors();
   },
 
   // Get service advisor by ID
@@ -216,3 +216,124 @@ export const serviceAdvisorUtils = {
     };
   },
 };
+
+const getAllServiceAdvisors = async (): Promise<ApiResponse<ServiceAdvisor[]>> => {
+  // Simulate API delay
+  await new Promise(resolve => setTimeout(resolve, 300));
+  
+  const mockServiceAdvisors: ServiceAdvisor[] = [
+    {
+      service_advisor_id: "sa-001",
+      name: "Ahmad Zulkifli",
+      status: "active",
+      created_at: "2024-01-12T08:00:00Z",
+      updated_at: "2025-09-18T10:30:00Z"
+    },
+    {
+      service_advisor_id: "sa-002",
+      name: "Sarah Lim",
+      status: "active",
+      created_at: "2024-02-08T09:15:00Z",
+      updated_at: "2025-09-19T14:45:00Z"
+    },
+    {
+      service_advisor_id: "sa-003",
+      name: "Raj Patel",
+      status: "inactive",
+      created_at: "2023-11-25T10:30:00Z",
+      updated_at: "2025-07-20T16:20:00Z"
+    },
+    {
+      service_advisor_id: "sa-004",
+      name: "Nurul Azizah",
+      status: "active",
+      created_at: "2024-03-15T11:00:00Z",
+      updated_at: "2025-09-20T08:15:00Z"
+    },
+    {
+      service_advisor_id: "sa-005",
+      name: "David Wong",
+      status: "active",
+      created_at: "2024-04-22T13:45:00Z",
+      updated_at: "2025-09-19T17:30:00Z"
+    },
+    {
+      service_advisor_id: "sa-006",
+      name: "Priya Sharma",
+      status: "active",
+      created_at: "2024-05-10T07:20:00Z",
+      updated_at: "2025-09-18T12:10:00Z"
+    },
+    {
+      service_advisor_id: "sa-007",
+      name: "Muhammad Hafiz",
+      status: "inactive",
+      created_at: "2024-01-30T14:15:00Z",
+      updated_at: "2025-08-15T09:45:00Z"
+    },
+    {
+      service_advisor_id: "sa-008",
+      name: "Chen Wei Lin",
+      status: "active",
+      created_at: "2024-06-18T09:30:00Z",
+      updated_at: "2025-09-20T11:25:00Z"
+    },
+    {
+      service_advisor_id: "sa-009",
+      name: "Aminah Ismail",
+      status: "active",
+      created_at: "2024-07-05T15:00:00Z",
+      updated_at: "2025-09-19T13:50:00Z"
+    },
+    {
+      service_advisor_id: "sa-010",
+      name: "Kumar Selvam",
+      status: "active",
+      created_at: "2024-08-12T08:45:00Z",
+      updated_at: "2025-09-18T16:40:00Z"
+    },
+    {
+      service_advisor_id: "sa-011",
+      name: "Jessica Tan",
+      status: "inactive",
+      created_at: "2023-12-08T12:20:00Z",
+      updated_at: "2025-06-25T10:15:00Z"
+    },
+    {
+      service_advisor_id: "sa-012",
+      name: "Farid Abdullah",
+      status: "active",
+      created_at: "2024-09-02T10:10:00Z",
+      updated_at: "2025-09-20T09:05:00Z"
+    },
+    {
+      service_advisor_id: "sa-013",
+      name: "Mei Ling Goh",
+      status: "active",
+      created_at: "2024-03-28T16:30:00Z",
+      updated_at: "2025-09-19T15:20:00Z"
+    },
+    {
+      service_advisor_id: "sa-014",
+      name: "Ravi Krishnan",
+      status: "active",
+      created_at: "2024-10-15T11:40:00Z",
+      updated_at: "2025-09-18T14:35:00Z"
+    },
+    {
+      service_advisor_id: "sa-015",
+      name: "Siti Hajar",
+      status: "inactive",
+      created_at: "2024-02-14T09:25:00Z",
+      updated_at: "2025-05-30T12:55:00Z"
+    }
+  ];
+
+  return {
+    success: true,
+    data: mockServiceAdvisors,
+    message: "Successfully retrieved all service advisors",
+    timestamp: new Date().toISOString(),
+    count: mockServiceAdvisors.length
+  };
+}

@@ -6,9 +6,18 @@ import {
   technicianAPI,
   technicianUtils,
 } from "@/lib/api/technicians";
+import { authAPI, tokenManager, navigation } from "@/lib/auth";
+import AdminHeader from "../components/AdminHeader";
 import AddTechnicianModal from "./components/AddTechnicianModal";
 import EditTechnicianModal from "./components/EditTechnicianModal";
 import DeleteTechnicianDialog from "./components/DeleteTechnicianDialog";
+
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: "admin" | "user";
+}
 
 export default function AdminTechniciansPage() {
   const [technicians, setTechnicians] = useState<Technician[]>([]);
@@ -19,6 +28,32 @@ export default function AdminTechniciansPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedTechnician, setSelectedTechnician] =
     useState<Technician | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+
+  // Check authentication and fetch user data
+  useEffect(() => {
+    if (!tokenManager.isAuthenticated()) {
+      navigation.redirectToLogin();
+      return;
+    }
+
+    const fetchUserData = async () => {
+      try {
+        const response = await authAPI.getCurrentUser();
+        if (response.success && response.user) {
+          if (response.user.role !== "admin") {
+            navigation.redirectToDashboard(response.user.role);
+            return;
+          }
+          setUser(response.user);
+        }
+      } catch (error) {
+        console.error("Failed to fetch user data:", error);
+      }
+    };
+
+    fetchUserData();
+  }, []);
 
   // Fetch technicians data
   const fetchTechnicians = async () => {
@@ -41,8 +76,10 @@ export default function AdminTechniciansPage() {
   };
 
   useEffect(() => {
-    fetchTechnicians();
-  }, []);
+    if (user) {
+      fetchTechnicians();
+    }
+  }, [user]);
 
   const handleAddTechnician = () => {
     setIsAddModalOpen(true);
@@ -63,27 +100,25 @@ export default function AdminTechniciansPage() {
     fetchTechnicians();
   };
 
+  const handleLogout = () => {
+    authAPI.logout();
+  };
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-toyota-red mx-auto"></div>
+          <p className="mt-4 text-toyota-text-secondary">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-white">
-        {/* Header */}
-        <header className="bg-toyota-black text-toyota-white py-6">
-          <div className="container mx-auto px-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <div className="w-12 h-12 bg-toyota-red rounded-lg flex items-center justify-center">
-                  <span className="text-toyota-white font-bold text-xl">T</span>
-                </div>
-                <div>
-                  <h1 className="text-2xl font-bold">
-                    Branch Appointment System
-                  </h1>
-                  <p className="text-gray-300 text-sm">Admin Panel</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </header>
+        <AdminHeader user={user} onLogout={handleLogout} />
 
         {/* Loading State */}
         <div className="container mx-auto px-6 py-12">
@@ -103,24 +138,7 @@ export default function AdminTechniciansPage() {
   if (error) {
     return (
       <div className="min-h-screen bg-white">
-        {/* Header */}
-        <header className="bg-toyota-black text-toyota-white py-6">
-          <div className="container mx-auto px-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <div className="w-12 h-12 bg-toyota-red rounded-lg flex items-center justify-center">
-                  <span className="text-toyota-white font-bold text-xl">T</span>
-                </div>
-                <div>
-                  <h1 className="text-2xl font-bold">
-                    Branch Appointment System
-                  </h1>
-                  <p className="text-gray-300 text-sm">Admin Panel</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </header>
+        <AdminHeader user={user} onLogout={handleLogout} />
 
         {/* Error State */}
         <div className="container mx-auto px-6 py-12">
@@ -144,50 +162,7 @@ export default function AdminTechniciansPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Header */}
-      <header className="bg-toyota-black text-toyota-white py-6">
-        <div className="container mx-auto px-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 bg-toyota-red rounded-lg flex items-center justify-center">
-                <span className="text-toyota-white font-bold text-xl">T</span>
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold">
-                  Branch Appointment System
-                </h1>
-                <p className="text-gray-300 text-sm">Admin Panel</p>
-              </div>
-            </div>
-            <nav className="hidden md:flex space-x-6">
-              <a
-                href="/admin/bays"
-                className="hover:text-toyota-red transition-colors"
-              >
-                Bay Management
-              </a>
-              <a
-                href="/admin/technicians"
-                className="text-toyota-red font-medium"
-              >
-                Technician Management
-              </a>
-              <a
-                href="/admin/categories"
-                className="hover:text-toyota-red transition-colors"
-              >
-                Categories
-              </a>
-              <a
-                href="/dashboard"
-                className="hover:text-toyota-red transition-colors"
-              >
-                Dashboard
-              </a>
-            </nav>
-          </div>
-        </div>
-      </header>
+      <AdminHeader user={user} onLogout={handleLogout} />
 
       {/* Main Content */}
       <main className="container mx-auto px-6 py-12">

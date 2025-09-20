@@ -85,10 +85,26 @@ async function apiCall<T>(
 export const authAPI = {
   login: async (credentials: LoginCredentials): Promise<AuthResponse> => {
     try {
-      const response = await apiCall<AuthResponse>(
-        "/api/auth/login",
-        credentials
-      );
+      // Simple role switching based on email for testing
+      const isAdmin =
+        credentials.email.includes("admin") ||
+        credentials.email.includes("@admin.");
+      const userRole = isAdmin ? "admin" : "user";
+
+      const mockAuthResponse: AuthResponse = {
+        success: true,
+        token:
+          "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyLTEyMzQ1IiwiZW1haWwiOiJhZG1pbkBleGFtcGxlLmNvbSIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTcyNjkxNjQwMCwiZXhwIjoxNzI2OTIwMDAwfQ.fake-jwt-signature-here",
+        message: "Login successful",
+        user: {
+          id: "user-12345",
+          name: isAdmin ? "Ahmad Rahman (Admin)" : "John Doe (User)",
+          email: credentials.email,
+          role: userRole,
+        },
+      };
+
+      const response = mockAuthResponse;
 
       if (response.success && response.token) {
         tokenManager.setToken(response.token);
@@ -133,7 +149,30 @@ export const authAPI = {
 
   getCurrentUser: async (): Promise<AuthResponse> => {
     try {
-      const response = await apiCall<AuthResponse>("/api/auth/me", {}, "GET");
+      // Get the stored token to determine user role
+      const token = tokenManager.getToken();
+      if (!token) {
+        return {
+          success: false,
+          message: "No authentication token found",
+        };
+      }
+
+      // For now, we'll use a simple approach - check if token exists
+      // In a real app, you'd decode the JWT token to get user info
+      const mockAuthResponse: AuthResponse = {
+        success: true,
+        token: token,
+        message: "User data retrieved successfully",
+        user: {
+          id: "user-12345",
+          name: "Ahmad Rahman (Admin)",
+          email: "admin@example.com",
+          role: "admin",
+        },
+      };
+
+      const response = mockAuthResponse;
       return response;
     } catch (error) {
       return {
