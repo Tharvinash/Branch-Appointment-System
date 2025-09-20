@@ -64,7 +64,9 @@ export default function RegisterPage() {
       });
 
       if (response.success) {
-        navigation.redirectToDashboard();
+        // Redirect based on user role
+        const userRole = response.user?.role;
+        navigation.redirectToDashboard(userRole);
       } else {
         setApiError(response.message || "Registration failed");
       }

@@ -1,114 +1,22 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { authAPI, tokenManager, navigation } from "@/lib/auth";
+import React from "react";
 
 interface User {
   id: string;
   name: string;
   email: string;
+  role: "admin" | "user";
 }
 
-export default function DashboardPage() {
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState("");
+interface DashboardProps {
+  user: User | null;
+  onLogout: () => void;
+}
 
-  useEffect(() => {
-    // Check if user is authenticated
-    if (!tokenManager.isAuthenticated()) {
-      navigation.redirectToLogin();
-      return;
-    }
-
-    // Fetch user data
-    const fetchUserData = async () => {
-      try {
-        const response = await authAPI.getCurrentUser();
-        if (response.success && response.user) {
-          setUser(response.user);
-        } else {
-          setError(response.message || "Failed to load user data");
-        }
-      } catch (error) {
-        setError("An unexpected error occurred");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchUserData();
-  }, []);
-
-  const handleLogout = () => {
-    authAPI.logout();
-  };
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-toyota-red mx-auto"></div>
-          <p className="mt-4 text-toyota-text-secondary">
-            Loading dashboard...
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="bg-red-50 border border-red-200 text-red-700 px-6 py-4 rounded-lg">
-            <p className="text-sm">{error}</p>
-            <button
-              onClick={() => window.location.reload()}
-              className="mt-2 text-sm text-toyota-red hover:text-toyota-red-dark transition-colors"
-            >
-              Try again
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
+export default function Dashboard({ user, onLogout }: DashboardProps) {
   return (
     <div className="min-h-screen bg-white">
-      {/* Header */}
-      <header className="bg-toyota-black text-toyota-white py-6">
-        <div className="container mx-auto px-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 bg-toyota-red rounded-lg flex items-center justify-center">
-                <span className="text-toyota-white font-bold text-xl">T</span>
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold">
-                  Branch Appointment System
-                </h1>
-                <p className="text-gray-300 text-sm">
-                  Toyota Gazoo Racing Inspired
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-4">
-              <span className="text-sm text-gray-300">
-                Welcome, {user?.name}
-              </span>
-              <button
-                onClick={handleLogout}
-                className="btn-toyota-outline text-sm px-4 py-2"
-              >
-                Logout
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
-
       {/* Main Content */}
       <main className="container mx-auto px-6 py-12">
         {/* Welcome Section */}
@@ -188,6 +96,12 @@ export default function DashboardPage() {
                 <span className="text-toyota-text-secondary">Email:</span>
                 <span className="ml-2 text-toyota-black font-medium">
                   {user?.email}
+                </span>
+              </div>
+              <div>
+                <span className="text-toyota-text-secondary">Role:</span>
+                <span className="ml-2 text-toyota-black font-medium capitalize">
+                  {user?.role}
                 </span>
               </div>
               <div>

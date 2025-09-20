@@ -49,7 +49,9 @@ export default function LoginPage() {
       const response = await authAPI.login(formData);
 
       if (response.success) {
-        navigation.redirectToDashboard();
+        // Redirect based on user role
+        const userRole = response.user?.role;
+        navigation.redirectToDashboard(userRole);
       } else {
         setApiError(response.message || "Login failed");
       }

@@ -19,6 +19,7 @@ export interface AuthResponse {
     id: string;
     name: string;
     email: string;
+    role: "admin" | "user";
   };
 }
 
@@ -177,9 +178,16 @@ export const validators = {
 
 // Navigation helpers
 export const navigation = {
-  redirectToDashboard: (): void => {
+  redirectToDashboard: (role?: "admin" | "user"): void => {
     if (typeof window !== "undefined") {
-      window.location.href = "/dashboard";
+      if (role === "admin") {
+        window.location.href = "/admin";
+      } else if (role === "user") {
+        window.location.href = "/user";
+      } else {
+        // Fallback to login if no role
+        window.location.href = "/login";
+      }
     }
   },
 
@@ -194,6 +202,17 @@ export const navigation = {
       navigation.redirectToLogin();
       return false;
     }
+    return true;
+  },
+
+  requireRole: (requiredRole: "admin" | "user"): boolean => {
+    if (!tokenManager.isAuthenticated()) {
+      navigation.redirectToLogin();
+      return false;
+    }
+
+    // Get user role from token or API
+    // For now, we'll handle this in the individual pages
     return true;
   },
 };

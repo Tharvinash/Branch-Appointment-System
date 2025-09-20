@@ -2,36 +2,38 @@
 
 import React, { useState, useEffect } from "react";
 import {
-  Technician,
-  technicianAPI,
-  technicianUtils,
-} from "@/lib/api/technicians";
-import AddTechnicianModal from "./components/AddTechnicianModal";
-import EditTechnicianModal from "./components/EditTechnicianModal";
-import DeleteTechnicianDialog from "./components/DeleteTechnicianDialog";
+  ServiceAdvisor,
+  serviceAdvisorAPI,
+  serviceAdvisorUtils,
+} from "@/lib/api/service-advisors";
+import AddServiceAdvisorModal from "./components/AddServiceAdvisorModal";
+import EditServiceAdvisorModal from "./components/EditServiceAdvisorModal";
+import DeleteServiceAdvisorDialog from "./components/DeleteServiceAdvisorDialog";
 
-export default function AdminTechniciansPage() {
-  const [technicians, setTechnicians] = useState<Technician[]>([]);
+export default function AdminServiceAdvisorsPage() {
+  const [serviceAdvisors, setServiceAdvisors] = useState<ServiceAdvisor[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [selectedTechnician, setSelectedTechnician] =
-    useState<Technician | null>(null);
+  const [selectedServiceAdvisor, setSelectedServiceAdvisor] =
+    useState<ServiceAdvisor | null>(null);
 
-  // Fetch technicians data
-  const fetchTechnicians = async () => {
+  // Fetch service advisors data
+  const fetchServiceAdvisors = async () => {
     setIsLoading(true);
     setError("");
 
     try {
-      const response = await technicianAPI.getAllTechnicians();
+      const response = await serviceAdvisorAPI.getAllServiceAdvisors();
 
       if (response.success && response.data) {
-        setTechnicians(technicianUtils.sortTechnicians(response.data));
+        setServiceAdvisors(
+          serviceAdvisorUtils.sortServiceAdvisors(response.data)
+        );
       } else {
-        setError(response.message || "Failed to fetch technicians");
+        setError(response.message || "Failed to fetch service advisors");
       }
     } catch (error) {
       setError("An unexpected error occurred");
@@ -41,26 +43,26 @@ export default function AdminTechniciansPage() {
   };
 
   useEffect(() => {
-    fetchTechnicians();
+    fetchServiceAdvisors();
   }, []);
 
-  const handleAddTechnician = () => {
+  const handleAddServiceAdvisor = () => {
     setIsAddModalOpen(true);
   };
 
-  const handleEditTechnician = (technician: Technician) => {
-    setSelectedTechnician(technician);
+  const handleEditServiceAdvisor = (serviceAdvisor: ServiceAdvisor) => {
+    setSelectedServiceAdvisor(serviceAdvisor);
     setIsEditModalOpen(true);
   };
 
-  const handleDeleteTechnician = (technician: Technician) => {
-    setSelectedTechnician(technician);
+  const handleDeleteServiceAdvisor = (serviceAdvisor: ServiceAdvisor) => {
+    setSelectedServiceAdvisor(serviceAdvisor);
     setIsDeleteDialogOpen(true);
   };
 
   const handleModalSuccess = () => {
-    // Refresh the technicians list after successful add/edit
-    fetchTechnicians();
+    // Refresh the service advisors list after successful add/edit
+    fetchServiceAdvisors();
   };
 
   if (isLoading) {
@@ -91,7 +93,7 @@ export default function AdminTechniciansPage() {
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-toyota-red mx-auto"></div>
               <p className="mt-4 text-toyota-text-secondary">
-                Loading technicians...
+                Loading service advisors...
               </p>
             </div>
           </div>
@@ -129,7 +131,7 @@ export default function AdminTechniciansPage() {
               <div className="bg-red-50 border border-red-200 text-red-700 px-6 py-4 rounded-lg">
                 <p className="text-sm">{error}</p>
                 <button
-                  onClick={fetchTechnicians}
+                  onClick={fetchServiceAdvisors}
                   className="mt-2 text-sm text-toyota-red hover:text-toyota-red-dark transition-colors"
                 >
                   Try again
@@ -168,9 +170,15 @@ export default function AdminTechniciansPage() {
               </a>
               <a
                 href="/admin/technicians"
-                className="text-toyota-red font-medium"
+                className="hover:text-toyota-red transition-colors"
               >
                 Technician Management
+              </a>
+              <a
+                href="/admin/service-advisors"
+                className="text-toyota-red font-medium"
+              >
+                Service Advisor Management
               </a>
               <a
                 href="/admin/categories"
@@ -195,14 +203,14 @@ export default function AdminTechniciansPage() {
         <div className="flex items-center justify-between mb-8">
           <div>
             <h2 className="text-3xl font-bold text-toyota-black">
-              Technician Management
+              Service Advisor Management
             </h2>
             <p className="text-toyota-text-secondary mt-2">
-              Manage technicians for your appointment system
+              Manage service advisors for your appointment system
             </p>
           </div>
           <button
-            onClick={handleAddTechnician}
+            onClick={handleAddServiceAdvisor}
             className="btn-toyota-primary flex items-center space-x-2"
           >
             <svg
@@ -218,13 +226,13 @@ export default function AdminTechniciansPage() {
                 d="M12 4v16m8-8H4"
               />
             </svg>
-            <span>Add Technician</span>
+            <span>Add Service Advisor</span>
           </button>
         </div>
 
-        {/* Technicians Table */}
+        {/* Service Advisors Table */}
         <div className="card-toyota">
-          {technicians.length === 0 ? (
+          {serviceAdvisors.length === 0 ? (
             /* Empty State */
             <div className="text-center py-12">
               <div className="w-16 h-16 bg-toyota-gray rounded-full flex items-center justify-center mx-auto mb-4">
@@ -243,16 +251,16 @@ export default function AdminTechniciansPage() {
                 </svg>
               </div>
               <h3 className="text-lg font-semibold text-toyota-black mb-2">
-                No Technicians Found
+                No Service Advisors Found
               </h3>
               <p className="text-toyota-text-secondary mb-6">
-                Get started by adding your first technician
+                Get started by adding your first service advisor
               </p>
               <button
-                onClick={handleAddTechnician}
+                onClick={handleAddServiceAdvisor}
                 className="btn-toyota-primary"
               >
-                Add Your First Technician
+                Add Your First Service Advisor
               </button>
             </div>
           ) : (
@@ -262,10 +270,10 @@ export default function AdminTechniciansPage() {
                 <thead className="bg-toyota-gray">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-toyota-text-secondary uppercase tracking-wider">
-                      Technician ID
+                      Service Advisor ID
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-toyota-text-secondary uppercase tracking-wider">
-                      Technician Name
+                      Name
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-toyota-text-secondary uppercase tracking-wider">
                       Status
@@ -276,20 +284,20 @@ export default function AdminTechniciansPage() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {technicians.map((technician, index) => {
-                    const statusInfo = technicianUtils.formatStatus(
-                      technician.technician_status
+                  {serviceAdvisors.map((serviceAdvisor, index) => {
+                    const statusInfo = serviceAdvisorUtils.formatStatus(
+                      serviceAdvisor.status
                     );
                     return (
                       <tr
-                        key={technician.technician_id}
+                        key={serviceAdvisor.service_advisor_id}
                         className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}
                       >
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-toyota-black">
-                          {technician.technician_id}
+                          {serviceAdvisor.service_advisor_id}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-toyota-black">
-                          {technician.technician_name}
+                          {serviceAdvisor.name}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className={statusInfo.className}>
@@ -299,13 +307,17 @@ export default function AdminTechniciansPage() {
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                           <div className="flex space-x-2">
                             <button
-                              onClick={() => handleEditTechnician(technician)}
+                              onClick={() =>
+                                handleEditServiceAdvisor(serviceAdvisor)
+                              }
                               className="text-toyota-red hover:text-toyota-red-dark transition-colors"
                             >
                               Edit
                             </button>
                             <button
-                              onClick={() => handleDeleteTechnician(technician)}
+                              onClick={() =>
+                                handleDeleteServiceAdvisor(serviceAdvisor)
+                              }
                               className="text-red-600 hover:text-red-800 transition-colors"
                             >
                               Delete
@@ -322,36 +334,30 @@ export default function AdminTechniciansPage() {
         </div>
 
         {/* Stats */}
-        {technicians.length > 0 && (
+        {serviceAdvisors.length > 0 && (
           <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="card-toyota text-center">
               <div className="text-2xl font-bold text-toyota-red mb-2">
-                {technicians.length}
+                {serviceAdvisors.length}
               </div>
               <div className="text-toyota-text-secondary">
-                Total Technicians
+                Total Service Advisors
               </div>
             </div>
             <div className="card-toyota text-center">
               <div className="text-2xl font-bold text-toyota-red mb-2">
-                {
-                  technicians.filter((t) => t.technician_status === "active")
-                    .length
-                }
+                {serviceAdvisors.filter((s) => s.status === "active").length}
               </div>
               <div className="text-toyota-text-secondary">
-                Active Technicians
+                Active Service Advisors
               </div>
             </div>
             <div className="card-toyota text-center">
               <div className="text-2xl font-bold text-toyota-red mb-2">
-                {
-                  technicians.filter((t) => t.technician_status === "inactive")
-                    .length
-                }
+                {serviceAdvisors.filter((s) => s.status === "inactive").length}
               </div>
               <div className="text-toyota-text-secondary">
-                Inactive Technicians
+                Inactive Service Advisors
               </div>
             </div>
           </div>
@@ -359,30 +365,30 @@ export default function AdminTechniciansPage() {
       </main>
 
       {/* Modals */}
-      <AddTechnicianModal
+      <AddServiceAdvisorModal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         onSuccess={handleModalSuccess}
       />
 
-      <EditTechnicianModal
+      <EditServiceAdvisorModal
         isOpen={isEditModalOpen}
         onClose={() => {
           setIsEditModalOpen(false);
-          setSelectedTechnician(null);
+          setSelectedServiceAdvisor(null);
         }}
         onSuccess={handleModalSuccess}
-        technician={selectedTechnician}
+        serviceAdvisor={selectedServiceAdvisor}
       />
 
-      <DeleteTechnicianDialog
+      <DeleteServiceAdvisorDialog
         isOpen={isDeleteDialogOpen}
         onClose={() => {
           setIsDeleteDialogOpen(false);
-          setSelectedTechnician(null);
+          setSelectedServiceAdvisor(null);
         }}
         onSuccess={handleModalSuccess}
-        technician={selectedTechnician}
+        serviceAdvisor={selectedServiceAdvisor}
       />
 
       {/* Footer */}
