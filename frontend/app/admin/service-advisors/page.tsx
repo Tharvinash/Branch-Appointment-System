@@ -335,13 +335,13 @@ export default function AdminServiceAdvisorsPage() {
 
       {/* Modals */}
       <AddServiceAdvisorModal
-        isOpen={isAddModalOpen}
+        open={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         onSuccess={handleModalSuccess}
       />
 
       <EditServiceAdvisorModal
-        isOpen={isEditModalOpen}
+        open={isEditModalOpen}
         onClose={() => {
           setIsEditModalOpen(false);
           setSelectedServiceAdvisor(null);
@@ -351,7 +351,7 @@ export default function AdminServiceAdvisorsPage() {
       />
 
       <DeleteServiceAdvisorDialog
-        isOpen={isDeleteDialogOpen}
+        open={isDeleteDialogOpen}
         onClose={() => {
           setIsDeleteDialogOpen(false);
           setSelectedServiceAdvisor(null);

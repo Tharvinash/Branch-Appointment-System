@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { authAPI, tokenManager, navigation } from "@/lib/auth";
 import AdminHeader from "./components/AdminHeader";
-import Dashboard from "../components/Dashboard";
+import BookingDashboard from "../components/BookingDashboard";
 
 interface User {
   id: string;
@@ -87,7 +87,7 @@ export default function AdminPage() {
   return (
     <div className="min-h-screen bg-white">
       <AdminHeader user={user} onLogout={handleLogout} />
-      <Dashboard user={user} onLogout={handleLogout} />
+      <BookingDashboard />
     </div>
   );
 }

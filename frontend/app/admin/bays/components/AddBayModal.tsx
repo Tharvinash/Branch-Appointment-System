@@ -2,15 +2,33 @@
 
 import React, { useState } from "react";
 import { CreateBayData, bayAPI, bayValidators } from "@/lib/api/bays";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface AddBayModalProps {
-  isOpen: boolean;
+  open: boolean;
   onClose: () => void;
   onSuccess: () => void;
 }
 
 export default function AddBayModal({
-  isOpen,
+  open,
   onClose,
   onSuccess,
 }: AddBayModalProps) {
@@ -87,38 +105,17 @@ export default function AddBayModal({
     onClose();
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-xl w-full max-h-[90vh] overflow-y-auto">
-        {/* Modal Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <h3 className="text-xl font-semibold text-toyota-black">
-            Add New Bay
-          </h3>
-          <button
-            onClick={handleClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
-          >
-            <svg
-              className="w-6 h-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
-          </button>
-        </div>
+    <Dialog open={open} onOpenChange={handleClose}>
+      <DialogContent className="sm:max-w-[500px]">
+        <DialogHeader>
+          <DialogTitle>Add New Bay</DialogTitle>
+          <DialogDescription>
+            Create a new bay with name, number, and status.
+          </DialogDescription>
+        </DialogHeader>
 
-        {/* Modal Body */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+        <form id="add-bay-form" onSubmit={handleSubmit} className="space-y-6">
           {/* API Error Alert */}
           {apiError && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
@@ -144,126 +141,115 @@ export default function AddBayModal({
           )}
 
           {/* Bay Name Field */}
-          <div>
-            <label
-              htmlFor="bay_name"
-              className="block text-sm font-medium text-toyota-black mb-2"
-            >
-              Bay Name *
-            </label>
-            <input
+          <div className="space-y-2">
+            <Label htmlFor="bay_name">
+              Bay Name <span className="text-red-500">*</span>
+            </Label>
+            <Input
               id="bay_name"
               name="bay_name"
               type="text"
               required
               value={formData.bay_name}
               onChange={handleInputChange}
-              className={`w-full px-3 py-2 border rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-toyota-red focus:border-toyota-red transition-colors ${
-                errors.bay_name ? "border-red-500" : "border-gray-300"
-              }`}
+              className={errors.bay_name ? "border-red-500" : ""}
               placeholder="Enter bay name (e.g., Service Bay 1)"
             />
             {errors.bay_name && (
-              <p className="mt-1 text-sm text-red-600">{errors.bay_name}</p>
+              <p className="text-sm text-red-600">{errors.bay_name}</p>
             )}
           </div>
 
           {/* Bay Number Field */}
-          <div>
-            <label
-              htmlFor="bay_no"
-              className="block text-sm font-medium text-toyota-black mb-2"
-            >
-              Bay Number *
-            </label>
-            <input
+          <div className="space-y-2">
+            <Label htmlFor="bay_no">
+              Bay Number <span className="text-red-500">*</span>
+            </Label>
+            <Input
               id="bay_no"
               name="bay_no"
               type="text"
               required
               value={formData.bay_no}
               onChange={handleInputChange}
-              className={`w-full px-3 py-2 border rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-toyota-red focus:border-toyota-red transition-colors ${
-                errors.bay_no ? "border-red-500" : "border-gray-300"
-              }`}
+              className={errors.bay_no ? "border-red-500" : ""}
               placeholder="Enter bay number (e.g., B-01, Bay A)"
             />
             {errors.bay_no && (
-              <p className="mt-1 text-sm text-red-600">{errors.bay_no}</p>
+              <p className="text-sm text-red-600">{errors.bay_no}</p>
             )}
           </div>
 
           {/* Bay Status Field */}
-          <div>
-            <label
-              htmlFor="bay_status"
-              className="block text-sm font-medium text-toyota-black mb-2"
-            >
-              Bay Status *
-            </label>
-            <select
-              id="bay_status"
-              name="bay_status"
-              required
+          <div className="space-y-2">
+            <Label htmlFor="bay_status">
+              Bay Status <span className="text-red-500">*</span>
+            </Label>
+            <Select
               value={formData.bay_status}
-              onChange={handleInputChange}
-              className={`w-full px-3 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-toyota-red focus:border-toyota-red transition-colors ${
-                errors.bay_status ? "border-red-500" : "border-gray-300"
-              }`}
+              onValueChange={(value) => {
+                const event = {
+                  target: { name: "bay_status", value },
+                } as React.ChangeEvent<HTMLSelectElement>;
+                handleInputChange(event);
+              }}
             >
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-            </select>
+              <SelectTrigger
+                className={errors.bay_status ? "border-red-500" : ""}
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="inactive">Inactive</SelectItem>
+              </SelectContent>
+            </Select>
             {errors.bay_status && (
-              <p className="mt-1 text-sm text-red-600">{errors.bay_status}</p>
+              <p className="text-sm text-red-600">{errors.bay_status}</p>
             )}
           </div>
-
-          {/* Modal Footer */}
-          <div className="flex items-center justify-end space-x-3 pt-6 border-t border-gray-200">
-            <button
-              type="button"
-              onClick={handleClose}
-              className="px-4 py-2 text-sm font-medium text-toyota-text-secondary hover:text-toyota-black transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="btn-toyota-primary disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
-            >
-              {isLoading ? (
-                <>
-                  <svg
-                    className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    ></circle>
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    ></path>
-                  </svg>
-                  Creating...
-                </>
-              ) : (
-                "Create Bay"
-              )}
-            </button>
-          </div>
         </form>
-      </div>
-    </div>
+
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={handleClose}>
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            form="add-bay-form"
+            disabled={isLoading}
+            className="bg-toyota-red hover:bg-toyota-red-dark"
+          >
+            {isLoading ? (
+              <>
+                <svg
+                  className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
+                Creating...
+              </>
+            ) : (
+              "Create Bay"
+            )}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

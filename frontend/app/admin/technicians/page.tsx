@@ -335,13 +335,13 @@ export default function AdminTechniciansPage() {
 
       {/* Modals */}
       <AddTechnicianModal
-        isOpen={isAddModalOpen}
+        open={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         onSuccess={handleModalSuccess}
       />
 
       <EditTechnicianModal
-        isOpen={isEditModalOpen}
+        open={isEditModalOpen}
         onClose={() => {
           setIsEditModalOpen(false);
           setSelectedTechnician(null);
@@ -351,7 +351,7 @@ export default function AdminTechniciansPage() {
       />
 
       <DeleteTechnicianDialog
-        isOpen={isDeleteDialogOpen}
+        open={isDeleteDialogOpen}
         onClose={() => {
           setIsDeleteDialogOpen(false);
           setSelectedTechnician(null);

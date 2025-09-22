@@ -1,12 +1,11 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import {
-  bookingAPI,
-  bookingUtils,
-  Booking,
-  ProcessStep,
-} from "@/lib/api/bookings";
+import { bookingAPI, bookingUtils, Booking } from "@/lib/api/bookings";
+import BookingEditModal from "./modals/BookingEditModal";
+import DownloadReportModal from "./modals/DownloadReportModal";
+import ProcessHistoryModal from "./modals/ProcessHistoryModal";
+import AddBookingModal from "./modals/AddBookingModal";
 
 interface Bay {
   id: string;
@@ -14,576 +13,6 @@ interface Bay {
   process: string;
   status: "active" | "inactive" | "maintenance";
 }
-
-interface BookingEditModalProps {
-  booking: Booking;
-  onClose: () => void;
-  onUpdate: (booking: Booking) => void;
-  onViewHistory: (booking: Booking) => void;
-  processOptions: string[];
-  timeSlots: string[];
-  bays: Bay[];
-}
-
-const BookingEditModal: React.FC<BookingEditModalProps> = ({
-  booking,
-  onClose,
-  onUpdate,
-  onViewHistory,
-  processOptions,
-  timeSlots,
-  bays,
-}) => {
-  const [formData, setFormData] = useState({
-    currentProcess: booking.currentProcess,
-    startTime: booking.startTime,
-    endTime: booking.endTime,
-    bayId: booking.bayId,
-  });
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-
-    // Calculate duration to maintain the same booking length
-    const startIndex = timeSlots.indexOf(booking.startTime);
-    const endIndex = timeSlots.indexOf(booking.endTime);
-    const duration = endIndex - startIndex;
-
-    const newStartIndex = timeSlots.indexOf(formData.startTime);
-    const newEndIndex = newStartIndex + duration;
-    const newEndTime =
-      timeSlots[newEndIndex] || timeSlots[timeSlots.length - 1];
-
-    const updatedBooking: Booking = {
-      ...booking,
-      currentProcess: formData.currentProcess,
-      startTime: formData.startTime,
-      endTime: newEndTime,
-      bayId: formData.bayId,
-    };
-
-    onUpdate(updatedBooking);
-  };
-
-  const handleInputChange = (field: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
-  };
-
-  // Get available bays for the selected process
-  const availableBays = bays.filter(
-    (bay) => bay.process === formData.currentProcess
-  );
-
-  return (
-    <div className="fixed inset-0 bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-xl w-full">
-        {/* Modal Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <h3 className="text-xl font-semibold text-toyota-black">
-            Edit Booking
-          </h3>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
-          >
-            <svg
-              className="w-6 h-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
-          </button>
-        </div>
-
-        {/* Modal Body */}
-        <div className="p-6">
-          {/* Booking Info */}
-          <div className="mb-6 p-4 bg-toyota-gray rounded-lg">
-            <h4 className="text-sm font-semibold text-toyota-black mb-2">
-              Booking Details
-            </h4>
-            <div className="space-y-1 text-sm">
-              <div>
-                <span className="font-medium">Vehicle:</span>{" "}
-                {booking.vehicleNo}
-              </div>
-              <div>
-                <span className="font-medium">SVA:</span> {booking.sva}
-              </div>
-              <div>
-                <span className="font-medium">Check-in:</span>{" "}
-                {booking.checkInDate}
-              </div>
-              <div>
-                <span className="font-medium">Promised:</span>{" "}
-                {booking.promisedDate}
-              </div>
-            </div>
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Process Selection */}
-            <div>
-              <label className="block text-sm font-medium text-toyota-black mb-2">
-                Current Process
-              </label>
-              <select
-                value={formData.currentProcess}
-                onChange={(e) =>
-                  handleInputChange("currentProcess", e.target.value)
-                }
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-toyota-red focus:border-toyota-red"
-              >
-                {processOptions.map((process) => (
-                  <option key={process} value={process}>
-                    {process}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Bay Selection */}
-            <div>
-              <label className="block text-sm font-medium text-toyota-black mb-2">
-                Bay Assignment
-              </label>
-              <select
-                value={formData.bayId}
-                onChange={(e) => handleInputChange("bayId", e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-toyota-red focus:border-toyota-red"
-              >
-                {availableBays.map((bay) => (
-                  <option key={bay.id} value={bay.id}>
-                    {bay.name} - {bay.process}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Start Time */}
-            <div>
-              <label className="block text-sm font-medium text-toyota-black mb-2">
-                Start Time
-              </label>
-              <select
-                value={formData.startTime}
-                onChange={(e) => handleInputChange("startTime", e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-toyota-red focus:border-toyota-red"
-              >
-                {timeSlots.map((time) => (
-                  <option key={time} value={time}>
-                    {time}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* End Time (calculated automatically) */}
-            <div>
-              <label className="block text-sm font-medium text-toyota-black mb-2">
-                End Time (Auto-calculated)
-              </label>
-              <input
-                type="text"
-                value={(() => {
-                  const startIndex = timeSlots.indexOf(booking.startTime);
-                  const endIndex = timeSlots.indexOf(booking.endTime);
-                  const duration = endIndex - startIndex;
-                  const newStartIndex = timeSlots.indexOf(formData.startTime);
-                  const newEndIndex = newStartIndex + duration;
-                  return (
-                    timeSlots[newEndIndex] || timeSlots[timeSlots.length - 1]
-                  );
-                })()}
-                disabled
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-600"
-              />
-            </div>
-
-            {/* Workflow Actions */}
-            <div className="pt-4 border-t border-gray-200">
-              <h4 className="text-sm font-semibold text-toyota-black mb-3">
-                Workflow Actions
-              </h4>
-              <div className="flex flex-wrap gap-2">
-                {bookingUtils.getNextActions(booking.status).map((action) => (
-                  <button
-                    key={action}
-                    type="button"
-                    onClick={() => {
-                      // Handle workflow action
-                      console.log(
-                        `Executing: ${action} for booking ${booking.id}`
-                      );
-                      onClose();
-                    }}
-                    className={`px-3 py-2 text-xs font-medium rounded-lg transition-colors ${
-                      action === "Complete Job"
-                        ? "bg-green-100 text-green-800 hover:bg-green-200"
-                        : action === "Pause Job"
-                        ? "bg-red-100 text-red-800 hover:bg-red-200"
-                        : action === "Resume Job"
-                        ? "bg-blue-100 text-blue-800 hover:bg-blue-200"
-                        : "bg-toyota-red text-white hover:bg-toyota-red-dark"
-                    }`}
-                  >
-                    {action}
-                  </button>
-                ))}
-                {bookingUtils.getNextActions(booking.status).length === 0 && (
-                  <span className="text-sm text-gray-500">
-                    No actions available
-                  </span>
-                )}
-              </div>
-
-              {/* View History Button */}
-              <div className="mt-3 pt-3 border-t border-gray-100">
-                <button
-                  type="button"
-                  onClick={() => {
-                    onViewHistory(booking);
-                    onClose();
-                  }}
-                  className="w-full px-3 py-2 text-xs font-medium text-toyota-red border border-toyota-red rounded-lg hover:bg-toyota-red hover:text-white transition-colors"
-                >
-                  📋 View Process History
-                </button>
-              </div>
-            </div>
-
-            {/* Modal Footer */}
-            <div className="flex items-center justify-end space-x-3 pt-4">
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-4 py-2 text-sm font-medium text-toyota-text-secondary hover:text-toyota-black transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="btn-toyota-primary px-4 py-2 text-sm"
-              >
-                Update Booking
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// Download Report Modal Component
-interface DownloadReportModalProps {
-  onClose: () => void;
-  bookings: Booking[];
-}
-
-const DownloadReportModal: React.FC<DownloadReportModalProps> = ({
-  onClose,
-  bookings,
-}) => {
-  const [carRegNo, setCarRegNo] = useState("");
-  const [isDownloading, setIsDownloading] = useState(false);
-
-  const handleDownload = async () => {
-    setIsDownloading(true);
-    try {
-      // Filter bookings if car reg no is provided
-      const filteredBookings = carRegNo.trim()
-        ? bookings.filter((b) =>
-            b.vehicleNo.toLowerCase().includes(carRegNo.toLowerCase())
-          )
-        : bookings;
-
-      // Create CSV content
-      const csvContent = [
-        [
-          "Vehicle No",
-          "SVA",
-          "Check-in Date",
-          "Promised Date",
-          "Current Process",
-          "Status",
-          "Start Time",
-          "End Time",
-          "Bay ID",
-          "Priority",
-          "Flow",
-        ],
-        ...filteredBookings.map((booking) => [
-          booking.vehicleNo,
-          booking.sva,
-          booking.checkInDate,
-          booking.promisedDate,
-          booking.currentProcess,
-          bookingUtils.getStatusText(booking.status),
-          booking.startTime,
-          booking.endTime,
-          booking.bayId,
-          booking.priority,
-          booking.flow || "",
-        ]),
-      ]
-        .map((row) => row.join(","))
-        .join("\n");
-
-      // Create and download file
-      const blob = new Blob([csvContent], { type: "text/csv" });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `booking-report-${
-        new Date().toISOString().split("T")[0]
-      }.csv`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
-
-      onClose();
-    } catch (error) {
-      console.error("Failed to download report:", error);
-    } finally {
-      setIsDownloading(false);
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-xl w-full">
-        {/* Modal Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <h3 className="text-xl font-semibold text-toyota-black">
-            Download Report
-          </h3>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
-          >
-            <svg
-              className="w-6 h-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
-          </button>
-        </div>
-
-        {/* Modal Body */}
-        <div className="p-6">
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-toyota-black mb-2">
-              Car Registration Number (Optional)
-            </label>
-            <input
-              type="text"
-              value={carRegNo}
-              onChange={(e) => setCarRegNo(e.target.value)}
-              placeholder="Leave empty to download all bookings"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-toyota-red focus:border-toyota-red"
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              {carRegNo.trim()
-                ? `Will download bookings for vehicles containing "${carRegNo}"`
-                : "Will download all booking information and processes"}
-            </p>
-          </div>
-
-          {/* Modal Footer */}
-          <div className="flex items-center justify-end space-x-3 pt-4">
-            <button
-              onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-toyota-text-secondary hover:text-toyota-black transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleDownload}
-              disabled={isDownloading}
-              className="btn-toyota-primary px-4 py-2 text-sm flex items-center space-x-2"
-            >
-              {isDownloading ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                  <span>Downloading...</span>
-                </>
-              ) : (
-                <>
-                  <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                    />
-                  </svg>
-                  <span>Download CSV</span>
-                </>
-              )}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// Process History Modal Component
-interface ProcessHistoryModalProps {
-  booking: Booking;
-  onClose: () => void;
-}
-
-const ProcessHistoryModal: React.FC<ProcessHistoryModalProps> = ({
-  booking,
-  onClose,
-}) => {
-  const [processHistory, setProcessHistory] = useState<ProcessStep[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchProcessHistory = async () => {
-      try {
-        const response = await bookingAPI.processTracking.getProcessHistory(
-          booking.id
-        );
-        if (response.success && response.data) {
-          setProcessHistory(response.data);
-        }
-      } catch (error) {
-        console.error("Failed to fetch process history:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchProcessHistory();
-  }, [booking.id]);
-
-  return (
-    <div className="fixed inset-0 bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-xl  w-full max-h-96 overflow-hidden">
-        {/* Modal Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <div>
-            <h3 className="text-xl font-semibold text-toyota-black">
-              Process History
-            </h3>
-            <p className="text-sm text-gray-600 mt-1">
-              Vehicle: {booking.vehicleNo} | SVA: {booking.sva}
-            </p>
-          </div>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
-          >
-            <svg
-              className="w-6 h-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
-          </button>
-        </div>
-
-        {/* Modal Body */}
-        <div className="p-6 overflow-y-auto max-h-80">
-          {isLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-toyota-red"></div>
-            </div>
-          ) : processHistory.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              No process history found for this booking.
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {processHistory.map((step, index) => (
-                <div
-                  key={step.id}
-                  className="border border-gray-200 rounded-lg p-4"
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center space-x-2">
-                      <div
-                        className={`w-3 h-3 rounded-full ${
-                          step.status === "completed"
-                            ? "bg-green-500"
-                            : step.status === "started"
-                            ? "bg-blue-500"
-                            : "bg-yellow-500"
-                        }`}
-                      ></div>
-                      <span className="font-medium text-toyota-black">
-                        {step.processName}
-                      </span>
-                    </div>
-                    <span
-                      className={`text-xs px-2 py-1 rounded-full ${
-                        step.status === "completed"
-                          ? "bg-green-100 text-green-800"
-                          : step.status === "started"
-                          ? "bg-blue-100 text-blue-800"
-                          : "bg-yellow-100 text-yellow-800"
-                      }`}
-                    >
-                      {step.status}
-                    </span>
-                  </div>
-                  <div className="text-sm text-gray-600 space-y-1">
-                    <div>Start: {step.startTime}</div>
-                    {step.endTime && <div>End: {step.endTime}</div>}
-                    {step.bayId && <div>Bay: {step.bayId}</div>}
-                    {step.notes && <div>Notes: {step.notes}</div>}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Modal Footer */}
-        <div className="flex items-center justify-end p-6 border-t border-gray-200">
-          <button
-            onClick={onClose}
-            className="btn-toyota-primary px-4 py-2 text-sm"
-          >
-            Close
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
 
 const BookingDashboard: React.FC = () => {
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -595,6 +24,7 @@ const BookingDashboard: React.FC = () => {
     useState(false);
   const [selectedBookingForHistory, setSelectedBookingForHistory] =
     useState<Booking | null>(null);
+  const [isAddBookingModalOpen, setIsAddBookingModalOpen] = useState(false);
 
   // Generate time slots from 8:00 AM to 5:00 PM (30-minute intervals)
   const generateTimeSlots = () => {
@@ -1015,6 +445,29 @@ const BookingDashboard: React.FC = () => {
     setIsProcessHistoryModalOpen(true);
   };
 
+  const handleAddBooking = async (newBookingData: Omit<Booking, "id">) => {
+    try {
+      // Generate a unique ID for the new booking
+      const newBooking: Booking = {
+        ...newBookingData,
+        id: `booking-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      };
+
+      // Add to local state (in a real app, this would be an API call)
+      setBookings((prevBookings) => [...prevBookings, newBooking]);
+      setIsAddBookingModalOpen(false);
+
+      // Here you would typically make an API call to save the booking
+      // const response = await bookingAPI.createBooking(newBookingData);
+      // if (response.success) {
+      //   setBookings((prevBookings) => [...prevBookings, response.data]);
+      //   setIsAddBookingModalOpen(false);
+      // }
+    } catch (error) {
+      console.error("Failed to add booking:", error);
+    }
+  };
+
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
       {/* Header */}
@@ -1056,7 +509,10 @@ const BookingDashboard: React.FC = () => {
               </svg>
               <span>Download Report</span>
             </button>
-            <button className="btn-toyota-primary px-4 py-2 text-sm">
+            <button
+              onClick={() => setIsAddBookingModalOpen(true)}
+              className="btn-toyota-primary px-4 py-2 text-sm"
+            >
               Add Booking
             </button>
           </div>
@@ -1531,36 +987,41 @@ const BookingDashboard: React.FC = () => {
       </div>
 
       {/* Booking Edit Modal */}
-      {isModalOpen && selectedBooking && (
-        <BookingEditModal
-          booking={selectedBooking}
-          onClose={closeModal}
-          onUpdate={updateBooking}
-          onViewHistory={handleViewHistory}
-          processOptions={processOptions}
-          timeSlots={timeSlots}
-          bays={bays}
-        />
-      )}
+      <BookingEditModal
+        open={isModalOpen && selectedBooking !== null}
+        booking={selectedBooking!}
+        onClose={closeModal}
+        onUpdate={updateBooking}
+        onViewHistory={handleViewHistory}
+        processOptions={processOptions}
+        timeSlots={timeSlots}
+        bays={bays}
+      />
 
       {/* Download Report Modal */}
-      {isDownloadModalOpen && (
-        <DownloadReportModal
-          onClose={() => setIsDownloadModalOpen(false)}
-          bookings={bookings}
-        />
-      )}
+      <DownloadReportModal
+        open={isDownloadModalOpen}
+        onClose={() => setIsDownloadModalOpen(false)}
+        bookings={bookings}
+      />
 
       {/* Process History Modal */}
-      {isProcessHistoryModalOpen && selectedBookingForHistory && (
-        <ProcessHistoryModal
-          booking={selectedBookingForHistory}
-          onClose={() => {
-            setIsProcessHistoryModalOpen(false);
-            setSelectedBookingForHistory(null);
-          }}
-        />
-      )}
+      <ProcessHistoryModal
+        open={isProcessHistoryModalOpen && selectedBookingForHistory !== null}
+        booking={selectedBookingForHistory!}
+        onClose={() => {
+          setIsProcessHistoryModalOpen(false);
+          setSelectedBookingForHistory(null);
+        }}
+      />
+
+      {/* Add Booking Modal */}
+      <AddBookingModal
+        open={isAddBookingModalOpen}
+        onClose={() => setIsAddBookingModalOpen(false)}
+        onAdd={handleAddBooking}
+        processOptions={processOptions}
+      />
     </div>
   );
 };

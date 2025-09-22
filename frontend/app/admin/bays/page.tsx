@@ -317,13 +317,13 @@ export default function AdminBaysPage() {
 
       {/* Modals */}
       <AddBayModal
-        isOpen={isAddModalOpen}
+        open={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         onSuccess={handleModalSuccess}
       />
 
       <EditBayModal
-        isOpen={isEditModalOpen}
+        open={isEditModalOpen}
         onClose={() => {
           setIsEditModalOpen(false);
           setSelectedBay(null);
@@ -333,7 +333,7 @@ export default function AdminBaysPage() {
       />
 
       <DeleteBayDialog
-        isOpen={isDeleteDialogOpen}
+        open={isDeleteDialogOpen}
         onClose={() => {
           setIsDeleteDialogOpen(false);
           setSelectedBay(null);
