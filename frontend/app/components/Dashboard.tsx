@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import BookingDashboard from "./BookingDashboard";
 
 interface User {
   id: string;
@@ -15,6 +16,11 @@ interface DashboardProps {
 }
 
 export default function Dashboard({ user, onLogout }: DashboardProps) {
+  // Show booking dashboard for admin users
+  if (user?.role === "admin") {
+    return <BookingDashboard />;
+  }
+
   return (
     <div className="min-h-screen bg-white">
       {/* Main Content */}
