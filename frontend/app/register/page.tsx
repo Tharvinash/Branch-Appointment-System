@@ -10,12 +10,15 @@ export default function RegisterPage() {
     email: "",
     password: "",
     confirmPassword: "",
+    role: 1, // Default to technician
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [apiError, setApiError] = useState("");
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
 
@@ -61,6 +64,7 @@ export default function RegisterPage() {
         name: formData.name,
         email: formData.email,
         password: formData.password,
+        role: parseInt(formData.role.toString()),
       });
 
       if (response.success) {
@@ -78,27 +82,43 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="w-full space-y-8">
+    <div className="min-h-screen bg-gradient-to-br from-toyota-black via-gray-900 to-toyota-red flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+      {/* Racing Background Elements */}
+      <div className="absolute inset-0 opacity-10">
+        <div className="absolute top-20 left-10 w-32 h-32 border-2 border-toyota-red rounded-full animate-pulse"></div>
+        <div className="absolute bottom-20 right-10 w-24 h-24 border-2 border-toyota-red rounded-full animate-pulse delay-1000"></div>
+        <div className="absolute top-1/2 left-1/4 w-16 h-16 border-2 border-toyota-red rounded-full animate-pulse delay-500"></div>
+        <div className="absolute top-1/3 right-1/4 w-20 h-20 border-2 border-toyota-red rounded-full animate-pulse delay-1500"></div>
+      </div>
+
+      {/* Speed Lines */}
+      <div className="absolute inset-0 opacity-5">
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-toyota-red to-transparent animate-pulse"></div>
+        <div className="absolute top-1/4 left-0 w-full h-1 bg-gradient-to-r from-transparent via-toyota-red to-transparent animate-pulse delay-300"></div>
+        <div className="absolute top-1/2 left-0 w-full h-1 bg-gradient-to-r from-transparent via-toyota-red to-transparent animate-pulse delay-600"></div>
+        <div className="absolute top-3/4 left-0 w-full h-1 bg-gradient-to-r from-transparent via-toyota-red to-transparent animate-pulse delay-900"></div>
+      </div>
+
+      <div className="w-full max-w-md space-y-8 relative z-10">
         {/* Header */}
         <div className="text-center">
-          <div className="mx-auto h-16 w-16 bg-toyota-red rounded-full flex items-center justify-center">
-            <span className="text-toyota-white text-2xl font-bold">T</span>
-          </div>
-          <h2 className="mt-6 text-3xl font-bold text-toyota-black">
+          {/* <div className="mx-auto h-20 w-20 bg-gradient-to-br from-toyota-red to-red-600 rounded-full flex items-center justify-center shadow-2xl border-4 border-toyota-white">
+            <span className="text-toyota-white text-3xl font-bold">T</span>
+          </div> */}
+          <h2 className="mt-6 text-4xl font-bold text-toyota-white">
             Create your account
           </h2>
-          <p className="mt-2 text-sm text-toyota-text-secondary">
-            Join the Toyota Gazoo Racing experience
+          <p className="mt-2 text-sm text-gray-300">
+            Bring racing precision to your routine service
           </p>
         </div>
 
         {/* Form */}
-        <div className="card-toyota">
+        <div className="bg-black/80 backdrop-blur-sm border-2 border-toyota-red rounded-2xl p-8 shadow-2xl">
           <form className="space-y-6" onSubmit={handleSubmit}>
             {/* API Error Alert */}
             {apiError && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+              <div className="bg-red-900/50 border-2 border-red-500 text-red-200 px-4 py-3 rounded-lg backdrop-blur-sm">
                 <div className="flex">
                   <div className="flex-shrink-0">
                     <svg
@@ -124,7 +144,7 @@ export default function RegisterPage() {
             <div>
               <label
                 htmlFor="name"
-                className="block text-sm font-medium text-toyota-black mb-2"
+                className="block text-sm font-medium text-toyota-white mb-2"
               >
                 Full name
               </label>
@@ -136,13 +156,13 @@ export default function RegisterPage() {
                 required
                 value={formData.name}
                 onChange={handleInputChange}
-                className={`w-full px-3 py-2 border rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-toyota-red focus:border-toyota-red transition-colors ${
-                  errors.name ? "border-red-500" : "border-gray-300"
+                className={`w-full px-4 py-3 bg-black/50 border-2 rounded-lg shadow-sm placeholder-gray-400 text-white focus:outline-none focus:ring-2 focus:ring-toyota-red focus:border-toyota-red transition-all duration-300 ${
+                  errors.name ? "border-red-500" : "border-gray-600"
                 }`}
                 placeholder="Enter your full name"
               />
               {errors.name && (
-                <p className="mt-1 text-sm text-red-600">{errors.name}</p>
+                <p className="mt-1 text-sm text-red-400">{errors.name}</p>
               )}
             </div>
 
@@ -150,7 +170,7 @@ export default function RegisterPage() {
             <div>
               <label
                 htmlFor="email"
-                className="block text-sm font-medium text-toyota-black mb-2"
+                className="block text-sm font-medium text-toyota-white mb-2"
               >
                 Email address
               </label>
@@ -162,13 +182,43 @@ export default function RegisterPage() {
                 required
                 value={formData.email}
                 onChange={handleInputChange}
-                className={`w-full px-3 py-2 border rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-toyota-red focus:border-toyota-red transition-colors ${
-                  errors.email ? "border-red-500" : "border-gray-300"
+                className={`w-full px-4 py-3 bg-black/50 border-2 rounded-lg shadow-sm placeholder-gray-400 text-white focus:outline-none focus:ring-2 focus:ring-toyota-red focus:border-toyota-red transition-all duration-300 ${
+                  errors.email ? "border-red-500" : "border-gray-600"
                 }`}
                 placeholder="Enter your email"
               />
               {errors.email && (
-                <p className="mt-1 text-sm text-red-600">{errors.email}</p>
+                <p className="mt-1 text-sm text-red-400">{errors.email}</p>
+              )}
+            </div>
+
+            {/* Role Field */}
+            <div>
+              <label
+                htmlFor="role"
+                className="block text-sm font-medium text-toyota-white mb-2"
+              >
+                Role
+              </label>
+              <select
+                id="role"
+                name="role"
+                required
+                value={formData.role}
+                onChange={handleInputChange}
+                className={`w-full px-4 py-3 pr-10 bg-black/50 border-2 rounded-lg shadow-sm text-white focus:outline-none focus:ring-2 focus:ring-toyota-red focus:border-toyota-red transition-all duration-300 ${
+                  errors.role ? "border-red-500" : "border-gray-600"
+                }`}
+              >
+                <option value={1} className="bg-black text-white">
+                  Technician
+                </option>
+                <option value={2} className="bg-black text-white">
+                  Service Advisor
+                </option>
+              </select>
+              {errors.role && (
+                <p className="mt-1 text-sm text-red-400">{errors.role}</p>
               )}
             </div>
 
@@ -176,7 +226,7 @@ export default function RegisterPage() {
             <div>
               <label
                 htmlFor="password"
-                className="block text-sm font-medium text-toyota-black mb-2"
+                className="block text-sm font-medium text-toyota-white mb-2"
               >
                 Password
               </label>
@@ -188,13 +238,13 @@ export default function RegisterPage() {
                 required
                 value={formData.password}
                 onChange={handleInputChange}
-                className={`w-full px-3 py-2 border rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-toyota-red focus:border-toyota-red transition-colors ${
-                  errors.password ? "border-red-500" : "border-gray-300"
+                className={`w-full px-4 py-3 bg-black/50 border-2 rounded-lg shadow-sm placeholder-gray-400 text-white focus:outline-none focus:ring-2 focus:ring-toyota-red focus:border-toyota-red transition-all duration-300 ${
+                  errors.password ? "border-red-500" : "border-gray-600"
                 }`}
                 placeholder="Create a password"
               />
               {errors.password && (
-                <p className="mt-1 text-sm text-red-600">{errors.password}</p>
+                <p className="mt-1 text-sm text-red-400">{errors.password}</p>
               )}
             </div>
 
@@ -202,7 +252,7 @@ export default function RegisterPage() {
             <div>
               <label
                 htmlFor="confirmPassword"
-                className="block text-sm font-medium text-toyota-black mb-2"
+                className="block text-sm font-medium text-toyota-white mb-2"
               >
                 Confirm password
               </label>
@@ -214,13 +264,13 @@ export default function RegisterPage() {
                 required
                 value={formData.confirmPassword}
                 onChange={handleInputChange}
-                className={`w-full px-3 py-2 border rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-toyota-red focus:border-toyota-red transition-colors ${
-                  errors.confirmPassword ? "border-red-500" : "border-gray-300"
+                className={`w-full px-4 py-3 bg-black/50 border-2 rounded-lg shadow-sm placeholder-gray-400 text-white focus:outline-none focus:ring-2 focus:ring-toyota-red focus:border-toyota-red transition-all duration-300 ${
+                  errors.confirmPassword ? "border-red-500" : "border-gray-600"
                 }`}
                 placeholder="Confirm your password"
               />
               {errors.confirmPassword && (
-                <p className="mt-1 text-sm text-red-600">
+                <p className="mt-1 text-sm text-red-400">
                   {errors.confirmPassword}
                 </p>
               )}
@@ -233,23 +283,23 @@ export default function RegisterPage() {
                 name="terms"
                 type="checkbox"
                 required
-                className="h-4 w-4 text-toyota-red focus:ring-toyota-red border-gray-300 rounded"
+                className="h-4 w-4 text-toyota-red focus:ring-toyota-red border-gray-600 bg-black/50 rounded"
               />
               <label
                 htmlFor="terms"
-                className="ml-2 block text-sm text-toyota-text-secondary"
+                className="ml-2 block text-sm text-gray-300"
               >
                 I agree to the{" "}
                 <a
                   href="#"
-                  className="text-toyota-red hover:text-toyota-red-dark transition-colors"
+                  className="text-toyota-red hover:text-red-400 transition-colors"
                 >
                   Terms and Conditions
                 </a>{" "}
                 and{" "}
                 <a
                   href="#"
-                  className="text-toyota-red hover:text-toyota-red-dark transition-colors"
+                  className="text-toyota-red hover:text-red-400 transition-colors"
                 >
                   Privacy Policy
                 </a>
@@ -261,7 +311,7 @@ export default function RegisterPage() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full btn-toyota-primary disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                className="w-full bg-gradient-to-r from-toyota-red to-red-600 hover:from-red-600 hover:to-red-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transform hover:scale-105 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center border-2 border-toyota-red"
               >
                 {isLoading ? (
                   <>
@@ -295,11 +345,11 @@ export default function RegisterPage() {
 
             {/* Login Link */}
             <div className="text-center">
-              <p className="text-sm text-toyota-text-secondary">
+              <p className="text-sm text-gray-300">
                 Already have an account?{" "}
                 <Link
                   href="/login"
-                  className="font-medium text-toyota-red hover:text-toyota-red-dark transition-colors"
+                  className="font-medium text-toyota-red hover:text-red-400 transition-colors"
                 >
                   Sign in here
                 </Link>
@@ -310,8 +360,8 @@ export default function RegisterPage() {
 
         {/* Footer */}
         <div className="text-center">
-          <p className="text-xs text-toyota-text-secondary">
-            © 2024 Branch Appointment System. Toyota Gazoo Racing inspired.
+          <p className="text-xs text-gray-400">
+            © 2025 Service Management System
           </p>
         </div>
       </div>

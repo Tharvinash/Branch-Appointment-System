@@ -245,20 +245,20 @@ export default function AdminBaysPage() {
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {bays.map((bay, index) => {
-                    const statusInfo = bayUtils.formatStatus(bay.bay_status);
+                    const statusInfo = bayUtils.formatStatus(bay.status);
                     return (
                       <tr
-                        key={bay.bay_id}
+                        key={bay.id}
                         className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}
                       >
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-toyota-black">
-                          {bay.bay_id}
+                          {bay.id}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-toyota-black">
-                          {bay.bay_name}
+                          {bay.name}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-toyota-black">
-                          {bay.bay_no}
+                          {bay.number}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className={statusInfo.className}>
@@ -301,13 +301,13 @@ export default function AdminBaysPage() {
             </div>
             <div className="card-toyota text-center">
               <div className="text-2xl font-bold text-toyota-red mb-2">
-                {bays.filter((bay) => bay.bay_status === "active").length}
+                {bays.filter((bay) => bay.status === "ACTIVE").length}
               </div>
               <div className="text-toyota-text-secondary">Active Bays</div>
             </div>
             <div className="card-toyota text-center">
               <div className="text-2xl font-bold text-toyota-red mb-2">
-                {bays.filter((bay) => bay.bay_status === "inactive").length}
+                {bays.filter((bay) => bay.status === "INACTIVE").length}
               </div>
               <div className="text-toyota-text-secondary">Inactive Bays</div>
             </div>
@@ -351,7 +351,7 @@ export default function AdminBaysPage() {
                 <span className="text-toyota-white font-bold">T</span>
               </div>
               <span className="text-gray-300">
-                © 2024 Branch Appointment System
+                © 2025 Service Management System
               </span>
             </div>
             <div className="flex space-x-6">

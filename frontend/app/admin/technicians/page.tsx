@@ -369,7 +369,7 @@ export default function AdminTechniciansPage() {
                 <span className="text-toyota-white font-bold">T</span>
               </div>
               <span className="text-gray-300">
-                © 2024 Branch Appointment System
+                © 2025 Service Management System
               </span>
             </div>
             <div className="flex space-x-6">

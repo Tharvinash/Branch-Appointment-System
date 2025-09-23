@@ -33,9 +33,9 @@ export default function AddBayModal({
   onSuccess,
 }: AddBayModalProps) {
   const [formData, setFormData] = useState<CreateBayData>({
-    bay_name: "",
-    bay_no: "",
-    bay_status: "active",
+    name: "",
+    number: "",
+    status: "ACTIVE",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
@@ -57,14 +57,14 @@ export default function AddBayModal({
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
-    const nameError = bayValidators.bayName(formData.bay_name);
-    if (nameError) newErrors.bay_name = nameError;
+    const nameError = bayValidators.bayName(formData.name);
+    if (nameError) newErrors.name = nameError;
 
-    const bayNoError = bayValidators.bayNo(formData.bay_no);
-    if (bayNoError) newErrors.bay_no = bayNoError;
+    const bayNoError = bayValidators.bayNo(formData.number);
+    if (bayNoError) newErrors.number = bayNoError;
 
-    const statusError = bayValidators.bayStatus(formData.bay_status);
-    if (statusError) newErrors.bay_status = statusError;
+    const statusError = bayValidators.bayStatus(formData.status);
+    if (statusError) newErrors.status = statusError;
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -96,9 +96,9 @@ export default function AddBayModal({
 
   const handleClose = () => {
     setFormData({
-      bay_name: "",
-      bay_no: "",
-      bay_status: "active",
+      name: "",
+      number: "",
+      status: "ACTIVE",
     });
     setErrors({});
     setApiError("");
@@ -142,70 +142,70 @@ export default function AddBayModal({
 
           {/* Bay Name Field */}
           <div className="space-y-2">
-            <Label htmlFor="bay_name">
+            <Label htmlFor="name">
               Bay Name <span className="text-red-500">*</span>
             </Label>
             <Input
-              id="bay_name"
-              name="bay_name"
+              id="name"
+              name="name"
               type="text"
               required
-              value={formData.bay_name}
+              value={formData.name}
               onChange={handleInputChange}
-              className={errors.bay_name ? "border-red-500" : ""}
+              className={errors.name ? "border-red-500" : ""}
               placeholder="Enter bay name (e.g., Service Bay 1)"
             />
-            {errors.bay_name && (
-              <p className="text-sm text-red-600">{errors.bay_name}</p>
+            {errors.name && (
+              <p className="text-sm text-red-600">{errors.name}</p>
             )}
           </div>
 
           {/* Bay Number Field */}
           <div className="space-y-2">
-            <Label htmlFor="bay_no">
+            <Label htmlFor="number">
               Bay Number <span className="text-red-500">*</span>
             </Label>
             <Input
-              id="bay_no"
-              name="bay_no"
+              id="number"
+              name="number"
               type="text"
               required
-              value={formData.bay_no}
+              value={formData.number}
               onChange={handleInputChange}
-              className={errors.bay_no ? "border-red-500" : ""}
+              className={errors.number ? "border-red-500" : ""}
               placeholder="Enter bay number (e.g., B-01, Bay A)"
             />
-            {errors.bay_no && (
-              <p className="text-sm text-red-600">{errors.bay_no}</p>
+            {errors.number && (
+              <p className="text-sm text-red-600">{errors.number}</p>
             )}
           </div>
 
           {/* Bay Status Field */}
           <div className="space-y-2">
-            <Label htmlFor="bay_status">
+            <Label htmlFor="status">
               Bay Status <span className="text-red-500">*</span>
             </Label>
             <Select
-              value={formData.bay_status}
+              value={formData.status}
               onValueChange={(value) => {
                 const event = {
-                  target: { name: "bay_status", value },
+                  target: { name: "status", value },
                 } as React.ChangeEvent<HTMLSelectElement>;
                 handleInputChange(event);
               }}
             >
               <SelectTrigger
-                className={errors.bay_status ? "border-red-500" : ""}
+                className={errors.status ? "border-red-500" : ""}
               >
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="inactive">Inactive</SelectItem>
+                <SelectItem value="ACTIVE">Active</SelectItem>
+                <SelectItem value="INACTIVE">Inactive</SelectItem>
               </SelectContent>
             </Select>
-            {errors.bay_status && (
-              <p className="text-sm text-red-600">{errors.bay_status}</p>
+            {errors.status && (
+              <p className="text-sm text-red-600">{errors.status}</p>
             )}
           </div>
         </form>

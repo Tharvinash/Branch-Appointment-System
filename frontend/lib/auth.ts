@@ -43,9 +43,45 @@ export interface AuthError {
   field?: string;
 }
 
+// JWT Token payload interface
+export interface JWTPayload {
+  sub: string;
+  id: number;
+  role: string;
+  name: string;
+  iat: number;
+  exp: number;
+}
+
 // API Base URL - adjust this to match your backend
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080";
+
+// JWT Token decoding function
+function decodeJWT(token: string): JWTPayload | null {
+  try {
+    // JWT tokens have 3 parts separated by dots: header.payload.signature
+    const parts = token.split(".");
+    if (parts.length !== 3) {
+      throw new Error("Invalid JWT token format");
+    }
+
+    // Decode the payload (second part)
+    const payload = parts[1];
+
+    // Add padding if needed for base64 decoding
+    const paddedPayload = payload + "=".repeat((4 - (payload.length % 4)) % 4);
+
+    // Decode base64
+    const decodedPayload = atob(paddedPayload);
+
+    // Parse JSON
+    return JSON.parse(decodedPayload) as JWTPayload;
+  } catch (error) {
+    console.error("Error decoding JWT token:", error);
+    return null;
+  }
+}
 
 // Token management
 export const tokenManager = {
@@ -66,6 +102,20 @@ export const tokenManager = {
 
   isAuthenticated: (): boolean => {
     return !!tokenManager.getToken();
+  },
+
+  isTokenExpired: (token: string): boolean => {
+    const payload = decodeJWT(token);
+    if (!payload) return true;
+
+    const currentTime = Math.floor(Date.now() / 1000);
+    return payload.exp < currentTime;
+  },
+
+  getTokenPayload: (): JWTPayload | null => {
+    const token = tokenManager.getToken();
+    if (!token) return null;
+    return decodeJWT(token);
   },
 };
 
@@ -162,7 +212,7 @@ export const authAPI = {
 
   getCurrentUser: async (): Promise<AuthResponse> => {
     try {
-      // Get the stored token to determine user role
+      // Get the stored token
       const token = tokenManager.getToken();
       if (!token) {
         return {
@@ -171,17 +221,36 @@ export const authAPI = {
         };
       }
 
-      // In a real app, you'd decode the JWT token to get user info
-      // For now, we'll return a basic response indicating the user is authenticated
+      // Check if token is expired
+      if (tokenManager.isTokenExpired(token)) {
+        tokenManager.removeToken();
+        return {
+          success: false,
+          message: "Token has expired. Please login again.",
+        };
+      }
+
+      // Decode JWT token to get user info
+      const payload = tokenManager.getTokenPayload();
+      if (!payload) {
+        return {
+          success: false,
+          message: "Invalid token format",
+        };
+      }
+
+      // Map backend role to frontend role
+      const frontendRole = payload.role === "ADMIN" ? "admin" : "user";
+
       return {
         success: true,
         token: token,
-        message: "User is authenticated",
+        message: "User data retrieved successfully",
         user: {
-          id: "current-user",
-          name: "Current User",
-          email: "user@example.com",
-          role: "user", // This should be determined from the JWT token
+          id: payload.id.toString(),
+          name: payload.name,
+          email: payload.sub, // 'sub' field contains the email
+          role: frontendRole,
         },
       };
     } catch (error) {
@@ -228,7 +297,6 @@ export const validators = {
 // Navigation helpers
 export const navigation = {
   redirectToDashboard: (role?: "admin" | "user"): void => {
-    console.log("redirecting to dashboard", role);
     if (typeof window !== "undefined") {
       if (role === "admin") {
         window.location.href = "/admin";
@@ -261,8 +329,14 @@ export const navigation = {
       return false;
     }
 
-    // Get user role from token or API
-    // For now, we'll handle this in the individual pages
-    return true;
+    // Get user role from token
+    const payload = tokenManager.getTokenPayload();
+    if (!payload) {
+      navigation.redirectToLogin();
+      return false;
+    }
+
+    const userRole = payload.role === "ADMIN" ? "admin" : "user";
+    return userRole === requiredRole;
   },
 };

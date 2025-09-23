@@ -60,6 +60,10 @@ async function apiCall<T>(
       body: data ? JSON.stringify(data) : undefined,
     });
 
+    if (response.status === 204) {
+      return { success: true } as ApiResponse<T>; // no body to parse
+    }
+
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({
         message: `HTTP ${response.status}: ${response.statusText}`,

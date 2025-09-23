@@ -11,6 +11,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 
 interface DeleteBayDialogProps {
   open: boolean;
@@ -35,7 +36,7 @@ export default function DeleteBayDialog({
     setApiError("");
 
     try {
-      const response = await bayAPI.deleteBay(bay.bay_id);
+      const response = await bayAPI.deleteBay(bay.id);
 
       if (response.success) {
         onSuccess();
@@ -60,13 +61,15 @@ export default function DeleteBayDialog({
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader>
-          <DialogTitle>Delete Bay</DialogTitle>
-          <DialogDescription>
-            This action cannot be undone. The bay will be permanently removed
-            from the system.
-          </DialogDescription>
-        </DialogHeader>
+        <VisuallyHidden asChild>
+          <DialogHeader>
+            <DialogTitle>Delete Bay</DialogTitle>
+            <DialogDescription>
+              This action cannot be undone. The bay will be permanently removed
+              from the system.
+            </DialogDescription>
+          </DialogHeader>
+        </VisuallyHidden>
 
         <div className="space-y-6">
           {/* API Error Alert */}
@@ -128,26 +131,26 @@ export default function DeleteBayDialog({
               <div className="space-y-1">
                 <div className="flex justify-between">
                   <span className="font-medium text-toyota-black">ID:</span>
-                  <span className="text-toyota-black">{bay.bay_id}</span>
+                  <span className="text-toyota-black">{bay.id}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="font-medium text-toyota-black">Name:</span>
-                  <span className="text-toyota-black">{bay.bay_name}</span>
+                  <span className="text-toyota-black">{bay.name}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="font-medium text-toyota-black">Number:</span>
-                  <span className="text-toyota-black">{bay.bay_no}</span>
+                  <span className="text-toyota-black">{bay.number}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="font-medium text-toyota-black">Status:</span>
                   <span
                     className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      bay.bay_status === "active"
+                      bay.status === "ACTIVE"
                         ? "bg-green-100 text-green-800"
                         : "bg-gray-100 text-gray-800"
                     }`}
                   >
-                    {bay.bay_status === "active" ? "Active" : "Inactive"}
+                    {bay.status === "ACTIVE" ? "Active" : "Inactive"}
                   </span>
                 </div>
               </div>
