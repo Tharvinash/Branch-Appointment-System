@@ -259,11 +259,11 @@ export default function AdminServiceAdvisorsPage() {
                     );
                     return (
                       <tr
-                        key={serviceAdvisor.service_advisor_id}
+                        key={serviceAdvisor.id}
                         className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}
                       >
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-toyota-black">
-                          {serviceAdvisor.service_advisor_id}
+                          {serviceAdvisor.id}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-toyota-black">
                           {serviceAdvisor.name}
@@ -315,7 +315,7 @@ export default function AdminServiceAdvisorsPage() {
             </div>
             <div className="card-toyota text-center">
               <div className="text-2xl font-bold text-toyota-red mb-2">
-                {serviceAdvisors.filter((s) => s.status === "active").length}
+                {serviceAdvisors.filter((s) => s.status === "AVAILABLE").length}
               </div>
               <div className="text-toyota-text-secondary">
                 Active Service Advisors
@@ -323,7 +323,7 @@ export default function AdminServiceAdvisorsPage() {
             </div>
             <div className="card-toyota text-center">
               <div className="text-2xl font-bold text-toyota-red mb-2">
-                {serviceAdvisors.filter((s) => s.status === "inactive").length}
+                {serviceAdvisors.filter((s) => s.status === "ON_LEAVE").length}
               </div>
               <div className="text-toyota-text-secondary">
                 Inactive Service Advisors

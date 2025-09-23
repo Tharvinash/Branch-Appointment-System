@@ -2,15 +2,8 @@
 
 import React, { useState } from "react";
 import { ServiceAdvisor, serviceAdvisorAPI } from "@/lib/api/service-advisors";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+// Note: These UI components need to be created or replaced with custom components
+// For now, we'll use standard HTML elements with Tailwind styling
 
 interface DeleteServiceAdvisorDialogProps {
   open: boolean;
@@ -36,7 +29,7 @@ export default function DeleteServiceAdvisorDialog({
 
     try {
       const response = await serviceAdvisorAPI.deleteServiceAdvisor(
-        serviceAdvisor.service_advisor_id
+        serviceAdvisor.id
       );
 
       if (response.success) {
@@ -59,21 +52,47 @@ export default function DeleteServiceAdvisorDialog({
 
   if (!serviceAdvisor) return null;
 
-  return (
-    <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader>
-          <DialogTitle>Delete Service Advisor</DialogTitle>
-          <DialogDescription>
-            This action cannot be undone. The service advisor will be
-            permanently removed from the system.
-          </DialogDescription>
-        </DialogHeader>
+  if (!open) return null;
 
-        <div className="space-y-6">
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-xl shadow-xl max-w-md w-full">
+        {/* Modal Header */}
+        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+          <div>
+            <h3 className="text-xl font-semibold text-toyota-black">
+              Delete Service Advisor
+            </h3>
+            <p className="text-sm text-gray-600 mt-1">
+              This action cannot be undone. The service advisor will be
+              permanently removed from the system.
+            </p>
+          </div>
+          <button
+            onClick={handleClose}
+            className="text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            <svg
+              className="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          </button>
+        </div>
+
+        {/* Modal Body */}
+        <div className="p-6 space-y-6">
           {/* API Error Alert */}
           {apiError && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
               <div className="flex">
                 <div className="flex-shrink-0">
                   <svg
@@ -130,9 +149,7 @@ export default function DeleteServiceAdvisorDialog({
               <div className="space-y-1">
                 <div className="flex justify-between">
                   <span className="font-medium text-toyota-black">ID:</span>
-                  <span className="text-toyota-black">
-                    {serviceAdvisor.service_advisor_id}
-                  </span>
+                  <span className="text-toyota-black">{serviceAdvisor.id}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="font-medium text-toyota-black">Name:</span>
@@ -144,12 +161,12 @@ export default function DeleteServiceAdvisorDialog({
                   <span className="font-medium text-toyota-black">Status:</span>
                   <span
                     className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      serviceAdvisor.status === "active"
+                      serviceAdvisor.status === "AVAILABLE"
                         ? "bg-green-100 text-green-800"
                         : "bg-yellow-100 text-yellow-800"
                     }`}
                   >
-                    {serviceAdvisor.status === "active"
+                    {serviceAdvisor.status === "AVAILABLE"
                       ? "Available"
                       : "On Leave"}
                   </span>
@@ -159,49 +176,31 @@ export default function DeleteServiceAdvisorDialog({
           </div>
         </div>
 
-        <DialogFooter>
-          <Button
+        {/* Modal Footer */}
+        <div className="flex items-center justify-end space-x-3 p-6 border-t border-gray-200">
+          <button
             type="button"
-            variant="outline"
             onClick={handleClose}
             disabled={isLoading}
+            className="px-4 py-2 text-sm font-medium text-toyota-text-secondary hover:text-toyota-black transition-colors disabled:opacity-50"
           >
             Cancel
-          </Button>
-          <Button
+          </button>
+          <button
             type="button"
             onClick={handleDelete}
             disabled={isLoading}
-            variant="destructive"
+            className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 text-sm flex items-center space-x-2 rounded-lg transition-colors disabled:opacity-50"
           >
             {isLoading ? (
               <>
-                <svg
-                  className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  ></circle>
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  ></path>
-                </svg>
-                Deleting...
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                <span>Deleting...</span>
               </>
             ) : (
               <>
                 <svg
-                  className="w-4 h-4 mr-2"
+                  className="w-4 h-4"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -213,12 +212,12 @@ export default function DeleteServiceAdvisorDialog({
                     d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
                   />
                 </svg>
-                Delete Service Advisor
+                <span>Delete Service Advisor</span>
               </>
             )}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }

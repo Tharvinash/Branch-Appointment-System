@@ -7,24 +7,8 @@ import {
   serviceAdvisorAPI,
   serviceAdvisorValidators,
 } from "@/lib/api/service-advisors";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+// Note: These UI components need to be created or replaced with custom components
+// For now, we'll use standard HTML elements with Tailwind styling
 
 interface EditServiceAdvisorModalProps {
   open: boolean;
@@ -41,7 +25,7 @@ export default function EditServiceAdvisorModal({
 }: EditServiceAdvisorModalProps) {
   const [formData, setFormData] = useState<UpdateServiceAdvisorData>({
     name: "",
-    status: "active",
+    status: "AVAILABLE",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
@@ -93,7 +77,7 @@ export default function EditServiceAdvisorModal({
 
     try {
       const response = await serviceAdvisorAPI.updateServiceAdvisor(
-        serviceAdvisor.service_advisor_id,
+        serviceAdvisor.id,
         formData
       );
 
@@ -118,21 +102,43 @@ export default function EditServiceAdvisorModal({
 
   if (!serviceAdvisor) return null;
 
-  return (
-    <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader>
-          <DialogTitle>Edit Service Advisor</DialogTitle>
-          <DialogDescription>
-            Update service advisor information and status.
-          </DialogDescription>
-        </DialogHeader>
+  if (!open) return null;
 
-        <form
-          id="edit-service-advisor-form"
-          onSubmit={handleSubmit}
-          className="space-y-6"
-        >
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-xl shadow-xl max-w-md w-full">
+        {/* Modal Header */}
+        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+          <div>
+            <h3 className="text-xl font-semibold text-toyota-black">
+              Edit Service Advisor
+            </h3>
+            <p className="text-sm text-gray-600 mt-1">
+              Update service advisor information and status.
+            </p>
+          </div>
+          <button
+            onClick={handleClose}
+            className="text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            <svg
+              className="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          </button>
+        </div>
+
+        {/* Modal Body */}
+        <form onSubmit={handleSubmit} className="p-6 space-y-6">
           {/* API Error Alert */}
           {apiError && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
@@ -159,14 +165,14 @@ export default function EditServiceAdvisorModal({
 
           {/* Service Advisor ID (Read-only) */}
           <div className="space-y-2">
-            <Label className="text-toyota-text-secondary">
+            <label className="block text-sm font-medium text-toyota-text-secondary">
               Service Advisor ID
-            </Label>
-            <Input
+            </label>
+            <input
               type="text"
-              value={serviceAdvisor.service_advisor_id}
+              value={serviceAdvisor.id}
               disabled
-              className="bg-gray-50 text-gray-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500"
             />
             <p className="text-xs text-toyota-text-secondary">
               Service Advisor ID cannot be changed
@@ -175,17 +181,22 @@ export default function EditServiceAdvisorModal({
 
           {/* Service Advisor Name Field */}
           <div className="space-y-2">
-            <Label htmlFor="name">
+            <label
+              htmlFor="name"
+              className="block text-sm font-medium text-toyota-black"
+            >
               Service Advisor Name <span className="text-red-500">*</span>
-            </Label>
-            <Input
+            </label>
+            <input
               id="name"
               name="name"
               type="text"
               required
               value={formData.name}
               onChange={handleInputChange}
-              className={errors.name ? "border-red-500" : ""}
+              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-toyota-red focus:border-toyota-red ${
+                errors.name ? "border-red-500" : "border-gray-300"
+              }`}
               placeholder="Enter service advisor name (e.g., Sarah Johnson)"
             />
             {errors.name && (
@@ -195,72 +206,56 @@ export default function EditServiceAdvisorModal({
 
           {/* Service Advisor Status Field */}
           <div className="space-y-2">
-            <Label htmlFor="status">
-              Service Advisor Status <span className="text-red-500">*</span>
-            </Label>
-            <Select
-              value={formData.status}
-              onValueChange={(value) => {
-                const event = {
-                  target: { name: "status", value },
-                } as React.ChangeEvent<HTMLSelectElement>;
-                handleInputChange(event);
-              }}
+            <label
+              htmlFor="status"
+              className="block text-sm font-medium text-toyota-black"
             >
-              <SelectTrigger className={errors.status ? "border-red-500" : ""}>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="active">Available</SelectItem>
-                <SelectItem value="inactive">On Leave</SelectItem>
-              </SelectContent>
-            </Select>
+              Service Advisor Status <span className="text-red-500">*</span>
+            </label>
+            <select
+              id="status"
+              name="status"
+              value={formData.status}
+              onChange={handleInputChange}
+              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-toyota-red focus:border-toyota-red ${
+                errors.status ? "border-red-500" : "border-gray-300"
+              }`}
+            >
+              <option value="AVAILABLE">Available</option>
+              <option value="ON_LEAVE">On Leave</option>
+            </select>
             {errors.status && (
               <p className="text-sm text-red-600">{errors.status}</p>
             )}
           </div>
         </form>
 
-        <DialogFooter>
-          <Button type="button" variant="outline" onClick={handleClose}>
+        {/* Modal Footer */}
+        <div className="flex items-center justify-end space-x-3 p-6 border-t border-gray-200">
+          <button
+            type="button"
+            onClick={handleClose}
+            className="px-4 py-2 text-sm font-medium text-toyota-text-secondary hover:text-toyota-black transition-colors"
+          >
             Cancel
-          </Button>
-          <Button
+          </button>
+          <button
             type="submit"
-            form="edit-service-advisor-form"
+            onClick={handleSubmit}
             disabled={isLoading}
-            className="bg-toyota-red hover:bg-toyota-red-dark"
+            className="btn-toyota-primary px-4 py-2 text-sm flex items-center space-x-2"
           >
             {isLoading ? (
               <>
-                <svg
-                  className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  ></circle>
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  ></path>
-                </svg>
-                Updating...
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                <span>Updating...</span>
               </>
             ) : (
               "Update Service Advisor"
             )}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
