@@ -1,6 +1,7 @@
 package com.branch.appointment.backend.controller;
 
 import com.branch.appointment.backend.dto.LoginResponse;
+import com.branch.appointment.backend.dto.LoginUserDto;
 import com.branch.appointment.backend.dto.RegisterResponse;
 import com.branch.appointment.backend.dto.RegisterUserDto;
 import com.branch.appointment.backend.service.AuthService;
@@ -29,7 +30,7 @@ public class AuthController {
   }
 
   @PostMapping("/login")
-  public ResponseEntity<LoginResponse> loginUser(@RequestBody RegisterUserDto userInfo) {
+  public ResponseEntity<LoginResponse> loginUser(@RequestBody LoginUserDto userInfo) {
     LoginResponse response = authService.loginUser(userInfo);
     return ResponseEntity.ok(response);
   }

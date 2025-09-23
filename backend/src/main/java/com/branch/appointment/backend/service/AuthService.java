@@ -1,6 +1,7 @@
 package com.branch.appointment.backend.service;
 
 import com.branch.appointment.backend.dto.LoginResponse;
+import com.branch.appointment.backend.dto.LoginUserDto;
 import com.branch.appointment.backend.dto.RegisterResponse;
 import com.branch.appointment.backend.dto.RegisterUserDto;
 import com.branch.appointment.backend.entity.ServiceAdvisorEntity;
@@ -72,7 +73,7 @@ public class AuthService {
     );
   }
 
-  public LoginResponse loginUser(RegisterUserDto userInfo) {
+  public LoginResponse loginUser(LoginUserDto userInfo) {
     log.info("Login attempt for user: {}", userInfo.getEmail());
 
     UserEntity user = userRepository.findByEmail(userInfo.getEmail());
