@@ -253,18 +253,18 @@ export default function AdminTechniciansPage() {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {technicians.map((technician, index) => {
                     const statusInfo = technicianUtils.formatStatus(
-                      technician.technician_status
+                      technician.status
                     );
                     return (
                       <tr
-                        key={technician.technician_id}
+                        key={technician.id}
                         className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}
                       >
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-toyota-black">
-                          {technician.technician_id}
+                          {technician.id}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-toyota-black">
-                          {technician.technician_name}
+                          {technician.name}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className={statusInfo.className}>
@@ -309,24 +309,18 @@ export default function AdminTechniciansPage() {
             </div>
             <div className="card-toyota text-center">
               <div className="text-2xl font-bold text-toyota-red mb-2">
-                {
-                  technicians.filter((t) => t.technician_status === "active")
-                    .length
-                }
+                {technicians.filter((t) => t.status === "AVAILABLE").length}
               </div>
               <div className="text-toyota-text-secondary">
-                Active Technicians
+                Available Technicians
               </div>
             </div>
             <div className="card-toyota text-center">
               <div className="text-2xl font-bold text-toyota-red mb-2">
-                {
-                  technicians.filter((t) => t.technician_status === "inactive")
-                    .length
-                }
+                {technicians.filter((t) => t.status === "ON_LEAVE").length}
               </div>
               <div className="text-toyota-text-secondary">
-                Inactive Technicians
+                On Leave Technicians
               </div>
             </div>
           </div>

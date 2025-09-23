@@ -3,6 +3,8 @@
  * Handles all service advisor-related API calls and data management
  */
 
+import { tokenManager } from "@/lib/auth";
+
 // Base API URL - adjust based on your backend configuration
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080";
@@ -37,7 +39,7 @@ const apiCall = async <T>(
   options: RequestInit = {}
 ): Promise<ApiResponse<T>> => {
   try {
-    const token = localStorage.getItem("auth_token");
+    const token = tokenManager.getToken();
 
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       headers: {

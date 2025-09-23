@@ -35,9 +35,7 @@ export default function DeleteTechnicianDialog({
     setApiError("");
 
     try {
-      const response = await technicianAPI.deleteTechnician(
-        technician.technician_id
-      );
+      const response = await technicianAPI.deleteTechnician(technician.id);
 
       if (response.success) {
         onSuccess();
@@ -130,26 +128,22 @@ export default function DeleteTechnicianDialog({
               <div className="space-y-1">
                 <div className="flex justify-between">
                   <span className="font-medium text-toyota-black">ID:</span>
-                  <span className="text-toyota-black">
-                    {technician.technician_id}
-                  </span>
+                  <span className="text-toyota-black">{technician.id}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="font-medium text-toyota-black">Name:</span>
-                  <span className="text-toyota-black">
-                    {technician.technician_name}
-                  </span>
+                  <span className="text-toyota-black">{technician.name}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="font-medium text-toyota-black">Status:</span>
                   <span
                     className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      technician.technician_status === "active"
+                      technician.status === "AVAILABLE"
                         ? "bg-green-100 text-green-800"
                         : "bg-yellow-100 text-yellow-800"
                     }`}
                   >
-                    {technician.technician_status === "active"
+                    {technician.status === "AVAILABLE"
                       ? "Available"
                       : "On Leave"}
                   </span>

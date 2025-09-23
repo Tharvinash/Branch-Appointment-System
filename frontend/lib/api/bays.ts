@@ -1,5 +1,7 @@
 // Bay management API functions
 
+import { tokenManager } from "@/lib/auth";
+
 export interface Bay {
   id: number;
   name: string;
@@ -29,19 +31,13 @@ export interface ApiResponse<T> {
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080";
 
-// Get auth token
-const getAuthToken = (): string | null => {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem("auth_token");
-};
-
 // API call helper
 async function apiCall<T>(
   endpoint: string,
   data?: any,
   method: "GET" | "POST" | "PUT" | "DELETE" = "GET"
 ): Promise<ApiResponse<T>> {
-  const token = getAuthToken();
+  const token = tokenManager.getToken();
 
   if (!token) {
     return {

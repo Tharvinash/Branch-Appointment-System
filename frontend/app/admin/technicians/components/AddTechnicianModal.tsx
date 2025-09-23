@@ -37,8 +37,8 @@ export default function AddTechnicianModal({
   onSuccess,
 }: AddTechnicianModalProps) {
   const [formData, setFormData] = useState<CreateTechnicianData>({
-    technician_name: "",
-    technician_status: "active",
+    name: "",
+    status: "AVAILABLE",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
@@ -60,15 +60,11 @@ export default function AddTechnicianModal({
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
-    const nameError = technicianValidators.technicianName(
-      formData.technician_name
-    );
-    if (nameError) newErrors.technician_name = nameError;
+    const nameError = technicianValidators.technicianName(formData.name);
+    if (nameError) newErrors.name = nameError;
 
-    const statusError = technicianValidators.technicianStatus(
-      formData.technician_status
-    );
-    if (statusError) newErrors.technician_status = statusError;
+    const statusError = technicianValidators.technicianStatus(formData.status);
+    if (statusError) newErrors.status = statusError;
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -100,8 +96,8 @@ export default function AddTechnicianModal({
 
   const handleClose = () => {
     setFormData({
-      technician_name: "",
-      technician_status: "active",
+      name: "",
+      status: "AVAILABLE",
     });
     setErrors({});
     setApiError("");
@@ -149,50 +145,48 @@ export default function AddTechnicianModal({
 
           {/* Technician Name Field */}
           <div className="space-y-2">
-            <Label htmlFor="technician_name">
+            <Label htmlFor="name">
               Technician Name <span className="text-red-500">*</span>
             </Label>
             <Input
-              id="technician_name"
-              name="technician_name"
+              id="name"
+              name="name"
               type="text"
               required
-              value={formData.technician_name}
+              value={formData.name}
               onChange={handleInputChange}
-              className={errors.technician_name ? "border-red-500" : ""}
+              className={errors.name ? "border-red-500" : ""}
               placeholder="Enter technician name (e.g., John Smith)"
             />
-            {errors.technician_name && (
-              <p className="text-sm text-red-600">{errors.technician_name}</p>
+            {errors.name && (
+              <p className="text-sm text-red-600">{errors.name}</p>
             )}
           </div>
 
           {/* Technician Status Field */}
           <div className="space-y-2">
-            <Label htmlFor="technician_status">
+            <Label htmlFor="status">
               Technician Status <span className="text-red-500">*</span>
             </Label>
             <Select
-              value={formData.technician_status}
+              value={formData.status}
               onValueChange={(value) => {
                 const event = {
-                  target: { name: "technician_status", value },
+                  target: { name: "status", value },
                 } as React.ChangeEvent<HTMLSelectElement>;
                 handleInputChange(event);
               }}
             >
-              <SelectTrigger
-                className={errors.technician_status ? "border-red-500" : ""}
-              >
+              <SelectTrigger className={errors.status ? "border-red-500" : ""}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="active">Available</SelectItem>
-                <SelectItem value="inactive">On Leave</SelectItem>
+                <SelectItem value="AVAILABLE">Available</SelectItem>
+                <SelectItem value="ON_LEAVE">On Leave</SelectItem>
               </SelectContent>
             </Select>
-            {errors.technician_status && (
-              <p className="text-sm text-red-600">{errors.technician_status}</p>
+            {errors.status && (
+              <p className="text-sm text-red-600">{errors.status}</p>
             )}
           </div>
         </form>
