@@ -9,6 +9,20 @@ export interface RegisterData {
   name: string;
   email: string;
   password: string;
+  role: number; // 0 = admin, 1 = technician, 2 = service advisor
+}
+
+export interface LoginResponse {
+  accessToken: string;
+  userId: number;
+  name: string;
+  email: string;
+  role: string;
+}
+
+export interface RegisterResponse {
+  success: boolean;
+  message: string;
 }
 
 export interface AuthResponse {
@@ -30,7 +44,8 @@ export interface AuthError {
 }
 
 // API Base URL - adjust this to match your backend
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080";
 
 // Token management
 export const tokenManager = {
@@ -85,32 +100,31 @@ async function apiCall<T>(
 export const authAPI = {
   login: async (credentials: LoginCredentials): Promise<AuthResponse> => {
     try {
-      // Simple role switching based on email for testing
-      const isAdmin =
-        credentials.email.includes("admin") ||
-        credentials.email.includes("@admin.");
-      const userRole = isAdmin ? "admin" : "user";
+      const response = await apiCall<LoginResponse>("/auth/login", credentials);
 
-      const mockAuthResponse: AuthResponse = {
-        success: true,
-        token:
-          "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyLTEyMzQ1IiwiZW1haWwiOiJhZG1pbkBleGFtcGxlLmNvbSIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTcyNjkxNjQwMCwiZXhwIjoxNzI2OTIwMDAwfQ.fake-jwt-signature-here",
-        message: "Login successful",
-        user: {
-          id: "user-12345",
-          name: isAdmin ? "Ahmad Rahman (Admin)" : "John Doe (User)",
-          email: credentials.email,
-          role: userRole,
-        },
-      };
+      if (response.accessToken) {
+        tokenManager.setToken(response.accessToken);
 
-      const response = mockAuthResponse;
+        // Map backend role to frontend role
+        const frontendRole = response.role === "ADMIN" ? "admin" : "user";
 
-      if (response.success && response.token) {
-        tokenManager.setToken(response.token);
+        return {
+          success: true,
+          token: response.accessToken,
+          message: "Login successful",
+          user: {
+            id: response.userId.toString(),
+            name: response.name,
+            email: response.email,
+            role: frontendRole,
+          },
+        };
       }
 
-      return response;
+      return {
+        success: false,
+        message: "Login failed - no token received",
+      };
     } catch (error) {
       return {
         success: false,
@@ -121,16 +135,15 @@ export const authAPI = {
 
   register: async (userData: RegisterData): Promise<AuthResponse> => {
     try {
-      const response = await apiCall<AuthResponse>(
-        "/api/auth/register",
+      const response = await apiCall<RegisterResponse>(
+        "/auth/register",
         userData
       );
 
-      if (response.success && response.token) {
-        tokenManager.setToken(response.token);
-      }
-
-      return response;
+      return {
+        success: true,
+        message: response.message || "Registration successful",
+      };
     } catch (error) {
       return {
         success: false,
@@ -158,22 +171,19 @@ export const authAPI = {
         };
       }
 
-      // For now, we'll use a simple approach - check if token exists
       // In a real app, you'd decode the JWT token to get user info
-      const mockAuthResponse: AuthResponse = {
+      // For now, we'll return a basic response indicating the user is authenticated
+      return {
         success: true,
         token: token,
-        message: "User data retrieved successfully",
+        message: "User is authenticated",
         user: {
-          id: "user-12345",
-          name: "Ahmad Rahman (Admin)",
-          email: "admin@example.com",
-          role: "admin",
+          id: "current-user",
+          name: "Current User",
+          email: "user@example.com",
+          role: "user", // This should be determined from the JWT token
         },
       };
-
-      const response = mockAuthResponse;
-      return response;
     } catch (error) {
       return {
         success: false,
@@ -218,6 +228,7 @@ export const validators = {
 // Navigation helpers
 export const navigation = {
   redirectToDashboard: (role?: "admin" | "user"): void => {
+    console.log("redirecting to dashboard", role);
     if (typeof window !== "undefined") {
       if (role === "admin") {
         window.location.href = "/admin";

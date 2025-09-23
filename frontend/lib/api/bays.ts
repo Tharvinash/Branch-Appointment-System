@@ -1,22 +1,22 @@
 // Bay management API functions
 
 export interface Bay {
-  bay_id: string;
-  bay_name: string;
-  bay_no: string;
-  bay_status: "active" | "inactive";
+  id: number;
+  name: string;
+  number: string;
+  status: "ACTIVE" | "INACTIVE";
 }
 
 export interface CreateBayData {
-  bay_name: string;
-  bay_no: string;
-  bay_status: "active" | "inactive";
+  name: string;
+  number: string;
+  status: "ACTIVE" | "INACTIVE";
 }
 
 export interface UpdateBayData {
-  bay_name: string;
-  bay_no: string;
-  bay_status: "active" | "inactive";
+  name: string;
+  number: string;
+  status: "ACTIVE" | "INACTIVE";
 }
 
 export interface ApiResponse<T> {
@@ -26,7 +26,8 @@ export interface ApiResponse<T> {
 }
 
 // API Base URL
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080";
 
 // Get auth token
 const getAuthToken = (): string | null => {
@@ -87,30 +88,30 @@ async function apiCall<T>(
 export const bayAPI = {
   // Get all bays
   getAllBays: async (): Promise<ApiResponse<Bay[]>> => {
-    return getAllBays();
+    return apiCall<Bay[]>("/bays");
   },
 
   // Get bay by ID
-  getBayById: async (bayId: string): Promise<ApiResponse<Bay>> => {
-    return apiCall<Bay>(`/api/admin/bays/${bayId}`);
+  getBayById: async (bayId: number): Promise<ApiResponse<Bay>> => {
+    return apiCall<Bay>(`/bays/${bayId}`);
   },
 
   // Create new bay
   createBay: async (bayData: CreateBayData): Promise<ApiResponse<Bay>> => {
-    return apiCall<Bay>("/api/admin/bays", bayData, "POST");
+    return apiCall<Bay>("/bays", bayData, "POST");
   },
 
   // Update bay
   updateBay: async (
-    bayId: string,
+    bayId: number,
     bayData: UpdateBayData
   ): Promise<ApiResponse<Bay>> => {
-    return apiCall<Bay>(`/api/admin/bays/${bayId}`, bayData, "PUT");
+    return apiCall<Bay>(`/bays/${bayId}`, bayData, "PUT");
   },
 
   // Delete bay
-  deleteBay: async (bayId: string): Promise<ApiResponse<void>> => {
-    return apiCall<void>(`/api/admin/bays/${bayId}`, undefined, "DELETE");
+  deleteBay: async (bayId: number): Promise<ApiResponse<void>> => {
+    return apiCall<void>(`/bays/${bayId}`, undefined, "DELETE");
   },
 };
 
@@ -136,8 +137,8 @@ export const bayValidators = {
 
   bayStatus: (status: string): string | null => {
     if (!status) return "Bay status is required";
-    if (!["active", "inactive"].includes(status)) {
-      return "Bay status must be either 'active' or 'inactive'";
+    if (!["ACTIVE", "INACTIVE"].includes(status)) {
+      return "Bay status must be either 'ACTIVE' or 'INACTIVE'";
     }
     return null;
   },
@@ -147,16 +148,16 @@ export const bayValidators = {
 export const bayUtils = {
   // Format bay status for display
   formatStatus: (
-    status: "active" | "inactive"
+    status: "ACTIVE" | "INACTIVE"
   ): { text: string; className: string } => {
     switch (status) {
-      case "active":
+      case "ACTIVE":
         return {
           text: "Active",
           className:
             "bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium",
         };
-      case "inactive":
+      case "INACTIVE":
         return {
           text: "Inactive",
           className:
@@ -171,12 +172,12 @@ export const bayUtils = {
     }
   },
 
-  // Sort bays by bay_no
+  // Sort bays by number
   sortBays: (bays: Bay[]): Bay[] => {
     return [...bays].sort((a, b) => {
-      // Extract numbers from bay_no for proper sorting
-      const aNum = parseInt(a.bay_no.replace(/\D/g, "")) || 0;
-      const bNum = parseInt(b.bay_no.replace(/\D/g, "")) || 0;
+      // Extract numbers from number for proper sorting
+      const aNum = parseInt(a.number.replace(/\D/g, "")) || 0;
+      const bNum = parseInt(b.number.replace(/\D/g, "")) || 0;
       return aNum - bNum;
     });
   },
@@ -184,10 +185,10 @@ export const bayUtils = {
   // Filter bays by status
   filterBaysByStatus: (
     bays: Bay[],
-    status: "active" | "inactive" | "all"
+    status: "ACTIVE" | "INACTIVE" | "all"
   ): Bay[] => {
     if (status === "all") return bays;
-    return bays.filter((bay) => bay.bay_status === status);
+    return bays.filter((bay) => bay.status === status);
   },
 
   // Search bays by name or number
@@ -196,113 +197,8 @@ export const bayUtils = {
     const lowercaseQuery = query.toLowerCase();
     return bays.filter(
       (bay) =>
-        bay.bay_name.toLowerCase().includes(lowercaseQuery) ||
-        bay.bay_no.toLowerCase().includes(lowercaseQuery)
+        bay.name.toLowerCase().includes(lowercaseQuery) ||
+        bay.number.toLowerCase().includes(lowercaseQuery)
     );
   },
-};
-
-const getAllBays = async (): Promise<ApiResponse<Bay[]>> => {
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 300));
-  
-  const mockBays: Bay[] = [
-    {
-      bay_id: "bay-001",
-      bay_name: "Main Entrance Bay A",
-      bay_no: "A001",
-      bay_status: "active"
-    },
-    {
-      bay_id: "bay-002", 
-      bay_name: "Main Entrance Bay B",
-      bay_no: "A002",
-      bay_status: "active"
-    },
-    {
-      bay_id: "bay-003",
-      bay_name: "Section B Loading Bay",
-      bay_no: "B001", 
-      bay_status: "inactive"
-    },
-    {
-      bay_id: "bay-004",
-      bay_name: "Section B Standard Bay",
-      bay_no: "B002",
-      bay_status: "active"
-    },
-    {
-      bay_id: "bay-005",
-      bay_name: "Level 2 Premium Bay",
-      bay_no: "C001",
-      bay_status: "active"
-    },
-    {
-      bay_id: "bay-006",
-      bay_name: "Level 2 Standard Bay A", 
-      bay_no: "C002",
-      bay_status: "inactive"
-    },
-    {
-      bay_id: "bay-007",
-      bay_name: "Level 2 Standard Bay B",
-      bay_no: "C003", 
-      bay_status: "active"
-    },
-    {
-      bay_id: "bay-008",
-      bay_name: "Basement Level Bay",
-      bay_no: "D001",
-      bay_status: "active"
-    },
-    {
-      bay_id: "bay-009",
-      bay_name: "Emergency Access Bay",
-      bay_no: "E001",
-      bay_status: "inactive"
-    },
-    {
-      bay_id: "bay-010",
-      bay_name: "VIP Reserved Bay",
-      bay_no: "V001",
-      bay_status: "active"
-    },
-    {
-      bay_id: "bay-011",
-      bay_name: "Electric Vehicle Bay A",
-      bay_no: "EV01",
-      bay_status: "active"
-    },
-    {
-      bay_id: "bay-012",
-      bay_name: "Electric Vehicle Bay B", 
-      bay_no: "EV02",
-      bay_status: "active"
-    },
-    {
-      bay_id: "bay-013",
-      bay_name: "Handicapped Access Bay",
-      bay_no: "H001",
-      bay_status: "active"
-    },
-    {
-      bay_id: "bay-014",
-      bay_name: "Oversized Vehicle Bay",
-      bay_no: "OS01",
-      bay_status: "inactive"
-    },
-    {
-      bay_id: "bay-015",
-      bay_name: "Visitor Parking Bay",
-      bay_no: "V002",
-      bay_status: "active"
-    }
-  ];
-
-  return {
-    success: true,
-    data: mockBays,
-    message: "Successfully retrieved all bays",
-    count: mockBays.length
-  };
 };
