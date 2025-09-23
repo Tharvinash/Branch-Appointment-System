@@ -5,9 +5,7 @@ import com.branch.appointment.backend.service.TechnicianService;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -16,10 +14,32 @@ import java.util.List;
 @RequestMapping("/technicians")
 public class TechnicianController {
 
-  private TechnicianService technicianService;
+  private final TechnicianService technicianService;
 
   @GetMapping
   public ResponseEntity<List<TechnicianDto>> getTechnicians() {
-    return ResponseEntity.status(HttpStatus.OK).body(technicianService.getTechnicianService());
+    return ResponseEntity.ok(technicianService.getTechnicians());
+  }
+
+  @GetMapping("/{id}")
+  public ResponseEntity<TechnicianDto> getTechnician(@PathVariable Long id) {
+    return ResponseEntity.ok(technicianService.getTechnician(id));
+  }
+
+  @PostMapping
+  public ResponseEntity<TechnicianDto> createTechnician(@RequestBody TechnicianDto dto) {
+    return ResponseEntity.status(HttpStatus.CREATED).body(technicianService.createTechnician(dto));
+  }
+
+  @PutMapping("/{id}")
+  public ResponseEntity<TechnicianDto> updateTechnician(@PathVariable Long id, @RequestBody TechnicianDto dto) {
+    return ResponseEntity.ok(technicianService.updateTechnician(id, dto));
+  }
+
+  @DeleteMapping("/{id}")
+  public ResponseEntity<Void> deleteTechnician(@PathVariable Long id) {
+    technicianService.deleteTechnician(id);
+    return ResponseEntity.noContent().build();
   }
 }
+

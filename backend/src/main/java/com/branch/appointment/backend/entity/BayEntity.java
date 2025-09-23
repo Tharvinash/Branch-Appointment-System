@@ -1,5 +1,6 @@
 package com.branch.appointment.backend.entity;
 
+import com.branch.appointment.backend.enums.BayStatusEnum;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -17,11 +18,15 @@ public class BayEntity {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   @Column(name = "Bay_Id")
-  private long id;
+  private Long id;
 
-  @Column(name = "Bay_Name")
+  @Column(name = "Bay_Name", nullable = false)
   private String bayName;
 
-  @Column(name = "Bay_Number")
+  @Column(name = "Bay_Number", nullable = false, unique = true)
   private String bayNumber;
+
+  @Enumerated(EnumType.STRING)
+  @Column(name = "Status", nullable = false)
+  private BayStatusEnum status;
 }

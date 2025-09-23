@@ -1,5 +1,6 @@
 package com.branch.appointment.backend.utils;
 
+import com.branch.appointment.backend.entity.UserEntity;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
@@ -30,14 +31,18 @@ public class TokenGeneration {
     this.key = Keys.hmacShaKeyFor(keyBytes);
   }
 
-  public String generateToken(String userName) {
+  public String generateToken(UserEntity user) {
     return Jwts.builder()
-        .subject(userName)
+        .subject(user.getEmail()) // or userId if you prefer
+        .claim("id", user.getUserId())
+        .claim("role", user.getRole().name())
+        .claim("name", user.getName())
         .issuedAt(new Date())
         .expiration(new Date(System.currentTimeMillis() + expiration))
         .signWith(key)
         .compact();
   }
+
 
   public Claims parseClaims(String token) {
     return Jwts.parser()

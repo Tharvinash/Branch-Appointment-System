@@ -1,16 +1,16 @@
 package com.branch.appointment.backend.dto;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import com.branch.appointment.backend.enums.BayStatusEnum;
+import lombok.*;
 
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
 @Setter
+@Builder
 public class BayDto {
   private Long id;
-  private String bayName;
-  private String bayNumber;
+  private String name;
+  private String number;
+  private BayStatusEnum status;
 }

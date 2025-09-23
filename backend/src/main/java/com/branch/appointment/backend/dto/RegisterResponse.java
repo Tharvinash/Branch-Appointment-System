@@ -1,16 +1,17 @@
 package com.branch.appointment.backend.dto;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.Setter;
 
-@Getter
-@Setter
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
 @AllArgsConstructor
-public class LoginResponse {
-  private String accessToken;
-  private Long userId;
+@NoArgsConstructor
+public class RegisterResponse {
+  private Long id;
   private String name;
   private String email;
   private String role;
+  private String message;
 }
