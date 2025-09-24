@@ -7,10 +7,12 @@ import DownloadReportModal from "./modals/DownloadReportModal";
 import ProcessHistoryModal from "./modals/ProcessHistoryModal";
 import AddBookingModal from "./modals/AddBookingModal";
 import { Bay, bayAPI, bayUtils } from "@/lib/api/bays";
+import { ServiceAdvisor, serviceAdvisorAPI } from "@/lib/api/service-advisors";
 
 const BookingDashboard: React.FC = () => {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [bays, setBays] = useState<Bay[]>([]);
+  const [serviceAdvisors, setServiceAdvisors] = useState<ServiceAdvisor[]>([]);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -54,11 +56,8 @@ const BookingDashboard: React.FC = () => {
   const fetchBays = async () => {
     try {
       const response = await bayAPI.getAllBays();
-
       if (response.success && response.data) {
-        if (response.success && response.data) {
-          setBays(response.data);
-        }
+        setBays(response.data);
       } else {
         console.error("Failed fetching bays:", response.message);
       }
@@ -67,9 +66,23 @@ const BookingDashboard: React.FC = () => {
     }
   };
 
-  // Fetch bookings data from API
+  const fetchServiceAdvisors = async () => {
+    try {
+      const response = await serviceAdvisorAPI.getAllServiceAdvisors();
+      if (response.success && response.data) {
+        setServiceAdvisors(response.data);
+      } else {
+        console.error("Failed to fetch service advisors:", response.message);
+      }
+    } catch (error) {
+      console.error("Error fetching service advisors:", error);
+    }
+  };
+
+  // Fetch data on component mount
   useEffect(() => {
     fetchBays();
+    fetchServiceAdvisors();
   }, []);
 
   // Fetch bookings data from API
@@ -92,6 +105,20 @@ const BookingDashboard: React.FC = () => {
 
   const getBookingsForBay = (bayId: number) => {
     return bookings.filter((booking) => booking.bayId === bayId);
+  };
+
+  // Helper function to get service advisor name by ID
+  const getServiceAdvisorName = (serviceAdvisorId: number): string => {
+    const advisor = serviceAdvisors.find(
+      (advisor) => advisor.id === serviceAdvisorId
+    );
+    return advisor ? advisor.name : `SVA: ${serviceAdvisorId}`;
+  };
+
+  // Helper function to get bay name by ID
+  const getBayName = (bayId: number): string => {
+    const bay = bays.find((bay) => bay.id === bayId);
+    return bay ? bay.name : `Bay ${bayId}`;
   };
 
   // Process options for dropdown
@@ -336,7 +363,7 @@ const BookingDashboard: React.FC = () => {
                       {booking.carRegNo}
                     </div>
                     <div className="text-xs truncate">
-                      SVA: {booking.serviceAdvisorId}
+                      SVA: {getServiceAdvisorName(booking.serviceAdvisorId)}
                     </div>
                     <div className="text-xs truncate">
                       {new Date(booking.checkinDate).toLocaleDateString()} →{" "}
@@ -367,7 +394,7 @@ const BookingDashboard: React.FC = () => {
                       {booking.carRegNo}
                     </div>
                     <div className="text-xs truncate">
-                      SVA: {booking.serviceAdvisorId}
+                      SVA: {getServiceAdvisorName(booking.serviceAdvisorId)}
                     </div>
                     <div className="text-xs truncate">
                       {new Date(booking.checkinDate).toLocaleDateString()} →{" "}
@@ -398,7 +425,7 @@ const BookingDashboard: React.FC = () => {
                       {booking.carRegNo}
                     </div>
                     <div className="text-xs truncate">
-                      SVA: {booking.serviceAdvisorId}
+                      SVA: {getServiceAdvisorName(booking.serviceAdvisorId)}
                     </div>
                     <div className="text-xs truncate">
                       {new Date(booking.checkinDate).toLocaleDateString()} →{" "}
@@ -466,7 +493,7 @@ const BookingDashboard: React.FC = () => {
                       {booking.carRegNo}
                     </div>
                     <div className="text-xs truncate">
-                      SVA: {booking.serviceAdvisorId}
+                      SVA: {getServiceAdvisorName(booking.serviceAdvisorId)}
                     </div>
                     <div className="text-xs truncate">
                       {new Date(booking.checkinDate).toLocaleDateString()} →{" "}
@@ -497,7 +524,7 @@ const BookingDashboard: React.FC = () => {
                       {booking.carRegNo}
                     </div>
                     <div className="text-xs truncate">
-                      SVA: {booking.serviceAdvisorId}
+                      SVA: {getServiceAdvisorName(booking.serviceAdvisorId)}
                     </div>
                     <div className="text-xs truncate">
                       {new Date(booking.checkinDate).toLocaleDateString()} →{" "}
@@ -618,9 +645,11 @@ const BookingDashboard: React.FC = () => {
                               width: position.width,
                               zIndex: 10,
                             }}
-                            title={`Vehicle: ${booking.carRegNo} | SVA: ${
+                            title={`Vehicle: ${
+                              booking.carRegNo
+                            } | SVA: ${getServiceAdvisorName(
                               booking.serviceAdvisorId
-                            } | Check-in: ${new Date(
+                            )} | Check-in: ${new Date(
                               booking.checkinDate
                             ).toLocaleDateString()} | Promised: ${new Date(
                               booking.promiseDate
@@ -636,7 +665,10 @@ const BookingDashboard: React.FC = () => {
                                 {booking.carRegNo}
                               </div>
                               <div className="text-xs text-gray-700">
-                                SVA: {booking.serviceAdvisorId}
+                                SVA:{" "}
+                                {getServiceAdvisorName(
+                                  booking.serviceAdvisorId
+                                )}
                               </div>
                               <div className="text-xs text-gray-600">
                                 {new Date(

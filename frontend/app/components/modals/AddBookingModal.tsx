@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { Booking, bookingAPI, bookingValidators } from "@/lib/api/bookings";
 import { serviceAdvisorAPI, ServiceAdvisor } from "@/lib/api/service-advisors";
+import { bayAPI, Bay as BayType } from "@/lib/api/bays";
 import {
   Dialog,
   DialogContent,
@@ -56,6 +57,8 @@ const AddBookingModal: React.FC<AddBookingModalProps> = ({
   const [apiError, setApiError] = useState("");
   const [serviceAdvisors, setServiceAdvisors] = useState<ServiceAdvisor[]>([]);
   const [isLoadingAdvisors, setIsLoadingAdvisors] = useState(false);
+  const [bays, setBays] = useState<BayType[]>([]);
+  const [isLoadingBays, setIsLoadingBays] = useState(false);
 
   const handleInputChange = (field: string, value: string | number) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -135,9 +138,10 @@ const AddBookingModal: React.FC<AddBookingModalProps> = ({
     }
   };
 
-  // Fetch service advisors on component mount
+  // Fetch service advisors and bays on component mount
   useEffect(() => {
-    const fetchServiceAdvisors = async () => {
+    const fetchData = async () => {
+      // Fetch service advisors
       setIsLoadingAdvisors(true);
       try {
         const response = await serviceAdvisorAPI.getAllServiceAdvisors();
@@ -151,10 +155,25 @@ const AddBookingModal: React.FC<AddBookingModalProps> = ({
       } finally {
         setIsLoadingAdvisors(false);
       }
+
+      // Fetch bays
+      setIsLoadingBays(true);
+      try {
+        const response = await bayAPI.getAllBays();
+        if (response.success && response.data) {
+          setBays(response.data);
+        } else {
+          console.error("Failed to fetch bays:", response.message);
+        }
+      } catch (error) {
+        console.error("Error fetching bays:", error);
+      } finally {
+        setIsLoadingBays(false);
+      }
     };
 
     if (open) {
-      fetchServiceAdvisors();
+      fetchData();
     }
   }, [open]);
 
@@ -299,21 +318,33 @@ const AddBookingModal: React.FC<AddBookingModalProps> = ({
 
           {/* Third Row */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Bay ID */}
+            {/* Bay */}
             <div className="space-y-2">
               <Label htmlFor="bayId">
-                Bay ID <span className="text-red-500">*</span>
+                Bay <span className="text-red-500">*</span>
               </Label>
-              <Input
-                id="bayId"
-                type="number"
-                value={formData.bayId}
-                onChange={(e) =>
-                  handleInputChange("bayId", parseInt(e.target.value) || 0)
+              <Select
+                value={formData.bayId.toString()}
+                onValueChange={(value) =>
+                  handleInputChange("bayId", parseInt(value))
                 }
-                placeholder="e.g. 1"
-                className={errors.bayId ? "border-red-500" : ""}
-              />
+              >
+                <SelectTrigger
+                  className={errors.bayId ? "border-red-500" : ""}
+                  disabled={isLoadingBays}
+                >
+                  <SelectValue
+                    placeholder={isLoadingBays ? "Loading..." : "Select Bay"}
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  {bays.map((bay) => (
+                    <SelectItem key={bay.id} value={bay.id.toString()}>
+                      {bay.name} (Bay {bay.number})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               {errors.bayId && (
                 <p className="text-red-500 text-xs">{errors.bayId}</p>
               )}
