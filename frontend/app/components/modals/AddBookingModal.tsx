@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Booking, bookingAPI, bookingValidators } from "@/lib/api/bookings";
+import { serviceAdvisorAPI, ServiceAdvisor } from "@/lib/api/service-advisors";
 import {
   Dialog,
   DialogContent,
@@ -53,6 +54,8 @@ const AddBookingModal: React.FC<AddBookingModalProps> = ({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [apiError, setApiError] = useState("");
+  const [serviceAdvisors, setServiceAdvisors] = useState<ServiceAdvisor[]>([]);
+  const [isLoadingAdvisors, setIsLoadingAdvisors] = useState(false);
 
   const handleInputChange = (field: string, value: string | number) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -132,6 +135,29 @@ const AddBookingModal: React.FC<AddBookingModalProps> = ({
     }
   };
 
+  // Fetch service advisors on component mount
+  useEffect(() => {
+    const fetchServiceAdvisors = async () => {
+      setIsLoadingAdvisors(true);
+      try {
+        const response = await serviceAdvisorAPI.getAllServiceAdvisors();
+        if (response.success && response.data) {
+          setServiceAdvisors(response.data);
+        } else {
+          console.error("Failed to fetch service advisors:", response.message);
+        }
+      } catch (error) {
+        console.error("Error fetching service advisors:", error);
+      } finally {
+        setIsLoadingAdvisors(false);
+      }
+    };
+
+    if (open) {
+      fetchServiceAdvisors();
+    }
+  }, [open]);
+
   const handleClose = () => {
     setFormData({
       carRegNo: "",
@@ -191,24 +217,37 @@ const AddBookingModal: React.FC<AddBookingModalProps> = ({
               )}
             </div>
 
-            {/* Service Advisor ID */}
+            {/* Service Advisor */}
             <div className="space-y-2">
               <Label htmlFor="serviceAdvisorId">
-                Service Advisor ID <span className="text-red-500">*</span>
+                Service Advisor <span className="text-red-500">*</span>
               </Label>
-              <Input
-                id="serviceAdvisorId"
-                type="number"
-                value={formData.serviceAdvisorId}
-                onChange={(e) =>
-                  handleInputChange(
-                    "serviceAdvisorId",
-                    parseInt(e.target.value) || 0
-                  )
+              <Select
+                value={formData.serviceAdvisorId.toString()}
+                onValueChange={(value) =>
+                  handleInputChange("serviceAdvisorId", parseInt(value))
                 }
-                placeholder="e.g. 1"
-                className={errors.serviceAdvisorId ? "border-red-500" : ""}
-              />
+              >
+                <SelectTrigger
+                  className={errors.serviceAdvisorId ? "border-red-500" : ""}
+                  disabled={isLoadingAdvisors}
+                >
+                  <SelectValue
+                    placeholder={
+                      isLoadingAdvisors
+                        ? "Loading..."
+                        : "Select Service Advisor"
+                    }
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  {serviceAdvisors.map((advisor) => (
+                    <SelectItem key={advisor.id} value={advisor.id.toString()}>
+                      {advisor.name} (ID: {advisor.id})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               {errors.serviceAdvisorId && (
                 <p className="text-red-500 text-xs">
                   {errors.serviceAdvisorId}

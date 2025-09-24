@@ -6,16 +6,11 @@ import BookingEditModal from "./modals/BookingEditModal";
 import DownloadReportModal from "./modals/DownloadReportModal";
 import ProcessHistoryModal from "./modals/ProcessHistoryModal";
 import AddBookingModal from "./modals/AddBookingModal";
-
-interface Bay {
-  id: string;
-  name: string;
-  process: string;
-  status: "active" | "inactive" | "maintenance";
-}
+import { Bay, bayAPI, bayUtils } from "@/lib/api/bays";
 
 const BookingDashboard: React.FC = () => {
   const [bookings, setBookings] = useState<Booking[]>([]);
+  const [bays, setBays] = useState<Bay[]>([]);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -43,77 +38,43 @@ const BookingDashboard: React.FC = () => {
 
   const timeSlots = generateTimeSlots();
 
-  // Mock data for bays
-  const bays: Bay[] = [
-    {
-      id: "bay-1",
-      name: "Bay 1",
-      process: "Surface Preparation",
-      status: "active",
-    },
-    { id: "bay-2", name: "Bay 2", process: "Spray Booth", status: "active" },
-    {
-      id: "bay-3",
-      name: "Bay 3",
-      process: "Quality Control",
-      status: "active",
-    },
-    {
-      id: "bay-4",
-      name: "Bay 4",
-      process: "Surface Preparation",
-      status: "active",
-    },
-    { id: "bay-5", name: "Bay 5", process: "Spray Booth", status: "active" },
-    {
-      id: "bay-6",
-      name: "Bay 6",
-      process: "Quality Control",
-      status: "active",
-    },
-    {
-      id: "bay-7",
-      name: "Bay 7",
-      process: "Surface Preparation",
-      status: "active",
-    },
-    { id: "bay-8", name: "Bay 8", process: "Spray Booth", status: "active" },
-    {
-      id: "bay-9",
-      name: "Bay 9",
-      process: "Quality Control",
-      status: "active",
-    },
-    {
-      id: "bay-10",
-      name: "Bay 10",
-      process: "Surface Preparation",
-      status: "active",
-    },
-    { id: "bay-11", name: "Bay 11", process: "Spray Booth", status: "active" },
-    {
-      id: "bay-12",
-      name: "Bay 12",
-      process: "Quality Control",
-      status: "active",
-    },
-  ];
+  const fetchBookings = async () => {
+    try {
+      const response = await bookingAPI.getBookings();
+      if (response.success && response.data) {
+        setBookings(response.data);
+      } else {
+        console.error("Failed to fetch bookings:", response.message);
+      }
+    } catch (error) {
+      console.error("Error fetching bookings:", error);
+    }
+  };
+
+  const fetchBays = async () => {
+    try {
+      const response = await bayAPI.getAllBays();
+      console.log("response", response);
+
+      if (response.success && response.data) {
+        if (response.success && response.data) {
+          setBays(response.data);
+        }
+      } else {
+        console.error("Failed fetching bays:", response.message);
+      }
+    } catch (error) {
+      console.error("Error fetching bays:", error);
+    }
+  };
 
   // Fetch bookings data from API
   useEffect(() => {
-    const fetchBookings = async () => {
-      try {
-        const response = await bookingAPI.getBookings();
-        if (response.success && response.data) {
-          setBookings(response.data);
-        } else {
-          console.error("Failed to fetch bookings:", response.message);
-        }
-      } catch (error) {
-        console.error("Error fetching bookings:", error);
-      }
-    };
+    fetchBays();
+  }, []);
 
+  // Fetch bookings data from API
+  useEffect(() => {
     fetchBookings();
   }, []);
 
@@ -548,9 +509,9 @@ const BookingDashboard: React.FC = () => {
                 >
                   <div
                     className={`w-4 h-4 rounded-full ${
-                      bay.status === "active"
+                      bay.status === "ACTIVE"
                         ? "bg-green-500"
-                        : bay.status === "inactive"
+                        : bay.status === "INACTIVE"
                         ? "bg-gray-400"
                         : "bg-red-500"
                     }`}
@@ -683,9 +644,9 @@ const BookingDashboard: React.FC = () => {
                   <div className="h-40 flex items-center justify-center">
                     <div
                       className={`w-4 h-4 rounded-full ${
-                        bay.status === "active"
+                        bay.status === "ACTIVE"
                           ? "bg-green-500"
-                          : bay.status === "inactive"
+                          : bay.status === "INACTIVE"
                           ? "bg-gray-400"
                           : "bg-red-500"
                       }`}
@@ -782,11 +743,11 @@ const BookingDashboard: React.FC = () => {
         open={isModalOpen && selectedBooking !== null}
         booking={selectedBooking!}
         onClose={closeModal}
-        onUpdate={updateBooking}
+        onSuccess={() => {
+          closeModal();
+          fetchBookings();
+        }}
         onViewHistory={handleViewHistory}
-        processOptions={processOptions}
-        timeSlots={timeSlots}
-        bays={bays}
       />
 
       {/* Download Report Modal */}

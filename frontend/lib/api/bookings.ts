@@ -171,6 +171,27 @@ export const bookingAPI = {
     }
   },
 
+  // Get single booking by ID
+  getBooking: async (bookingId: number): Promise<BookingResponse> => {
+    try {
+      const response = await apiCall<Booking>(
+        `/bookings/${bookingId}`,
+        {},
+        "GET"
+      );
+      return {
+        success: true,
+        data: response,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message:
+          error instanceof Error ? error.message : "Failed to fetch booking",
+      };
+    }
+  },
+
   // Update booking status and details
   updateBooking: async (
     bookingId: number,
@@ -182,6 +203,7 @@ export const bookingAPI = {
         updateData,
         "PUT"
       );
+
       return {
         success: true,
         data: response,
@@ -244,15 +266,24 @@ export const bookingAPI = {
       bayId: number
     ): Promise<BookingResponse> => {
       try {
-        const response = await apiCall<Booking>(
-          `/bookings/${bookingId}`,
-          { status: "BAY_QUEUE", bayId },
-          "PUT"
-        );
-        return {
-          success: true,
-          data: response,
+        // First get the current booking data
+        const currentBooking = await bookingAPI.getBooking(bookingId);
+        if (!currentBooking.success || !currentBooking.data) {
+          return {
+            success: false,
+            message: "Failed to fetch current booking data",
+          };
+        }
+
+        // Update the booking with new status and bayId
+        const updateData: UpdateBookingRequest = {
+          ...currentBooking.data,
+          status: "BAY_QUEUE",
+          bayId: bayId,
         };
+
+        const response = await bookingAPI.updateBooking(bookingId, updateData);
+        return response;
       } catch (error) {
         return {
           success: false,
@@ -263,17 +294,26 @@ export const bookingAPI = {
     },
 
     // BAY_QUEUE → NEXT_JOB
-    moveToNextJob: async (bookingId: number): Promise<BookingResponse> => {
+    moveToNextJob: async (bookingId: number, bayId: number): Promise<BookingResponse> => {
       try {
-        const response = await apiCall<Booking>(
-          `/bookings/${bookingId}`,
-          { status: "NEXT_JOB" },
-          "PUT"
-        );
-        return {
-          success: true,
-          data: response,
+        // First get the current booking data
+        const currentBooking = await bookingAPI.getBooking(bookingId);
+        if (!currentBooking.success || !currentBooking.data) {
+          return {
+            success: false,
+            message: "Failed to fetch current booking data",
+          };
+        }
+
+        // Update the booking with new status
+        const updateData: UpdateBookingRequest = {
+          ...currentBooking.data,
+          status: "NEXT_JOB",
+          bayId: bayId,
         };
+
+        const response = await bookingAPI.updateBooking(bookingId, updateData);
+        return response;
       } catch (error) {
         return {
           success: false,
@@ -292,15 +332,25 @@ export const bookingAPI = {
       jobEndTime: string
     ): Promise<BookingResponse> => {
       try {
-        const response = await apiCall<Booking>(
-          `/bookings/${bookingId}`,
-          { status: "ACTIVE_BOARD", jobStartTime, jobEndTime },
-          "PUT"
-        );
-        return {
-          success: true,
-          data: response,
+        // First get the current booking data
+        const currentBooking = await bookingAPI.getBooking(bookingId);
+        if (!currentBooking.success || !currentBooking.data) {
+          return {
+            success: false,
+            message: "Failed to fetch current booking data",
+          };
+        }
+
+        // Update the booking with new status and times
+        const updateData: UpdateBookingRequest = {
+          ...currentBooking.data,
+          status: "ACTIVE_BOARD",
+          jobStartTime,
+          jobEndTime,
         };
+
+        const response = await bookingAPI.updateBooking(bookingId, updateData);
+        return response;
       } catch (error) {
         return {
           success: false,
@@ -313,15 +363,23 @@ export const bookingAPI = {
     // ACTIVE_BOARD → JOB_STOPPAGE
     pauseJob: async (bookingId: number): Promise<BookingResponse> => {
       try {
-        const response = await apiCall<Booking>(
-          `/bookings/${bookingId}`,
-          { status: "JOB_STOPPAGE" },
-          "PUT"
-        );
-        return {
-          success: true,
-          data: response,
+        // First get the current booking data
+        const currentBooking = await bookingAPI.getBooking(bookingId);
+        if (!currentBooking.success || !currentBooking.data) {
+          return {
+            success: false,
+            message: "Failed to fetch current booking data",
+          };
+        }
+
+        // Update the booking with new status
+        const updateData: UpdateBookingRequest = {
+          ...currentBooking.data,
+          status: "JOB_STOPPAGE",
         };
+
+        const response = await bookingAPI.updateBooking(bookingId, updateData);
+        return response;
       } catch (error) {
         return {
           success: false,
@@ -334,15 +392,23 @@ export const bookingAPI = {
     // JOB_STOPPAGE → ACTIVE_BOARD
     resumeJob: async (bookingId: number): Promise<BookingResponse> => {
       try {
-        const response = await apiCall<Booking>(
-          `/bookings/${bookingId}`,
-          { status: "ACTIVE_BOARD" },
-          "PUT"
-        );
-        return {
-          success: true,
-          data: response,
+        // First get the current booking data
+        const currentBooking = await bookingAPI.getBooking(bookingId);
+        if (!currentBooking.success || !currentBooking.data) {
+          return {
+            success: false,
+            message: "Failed to fetch current booking data",
+          };
+        }
+
+        // Update the booking with new status
+        const updateData: UpdateBookingRequest = {
+          ...currentBooking.data,
+          status: "ACTIVE_BOARD",
         };
+
+        const response = await bookingAPI.updateBooking(bookingId, updateData);
+        return response;
       } catch (error) {
         return {
           success: false,
@@ -355,15 +421,23 @@ export const bookingAPI = {
     // ACTIVE_BOARD → REPAIR_COMPLETION
     completeJob: async (bookingId: number): Promise<BookingResponse> => {
       try {
-        const response = await apiCall<Booking>(
-          `/bookings/${bookingId}`,
-          { status: "REPAIR_COMPLETION" },
-          "PUT"
-        );
-        return {
-          success: true,
-          data: response,
+        // First get the current booking data
+        const currentBooking = await bookingAPI.getBooking(bookingId);
+        if (!currentBooking.success || !currentBooking.data) {
+          return {
+            success: false,
+            message: "Failed to fetch current booking data",
+          };
+        }
+
+        // Update the booking with new status
+        const updateData: UpdateBookingRequest = {
+          ...currentBooking.data,
+          status: "REPAIR_COMPLETION",
         };
+
+        const response = await bookingAPI.updateBooking(bookingId, updateData);
+        return response;
       } catch (error) {
         return {
           success: false,

@@ -7,6 +7,7 @@ import {
   bookingAPI,
   bookingValidators,
 } from "@/lib/api/bookings";
+import { serviceAdvisorAPI, ServiceAdvisor } from "@/lib/api/service-advisors";
 import {
   Dialog,
   DialogContent,
@@ -62,14 +63,43 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [apiError, setApiError] = useState("");
+  const [serviceAdvisors, setServiceAdvisors] = useState<ServiceAdvisor[]>([]);
+  const [isLoadingAdvisors, setIsLoadingAdvisors] = useState(false);
+
+  // Fetch service advisors on component mount
+  useEffect(() => {
+    const fetchServiceAdvisors = async () => {
+      setIsLoadingAdvisors(true);
+      try {
+        const response = await serviceAdvisorAPI.getAllServiceAdvisors();
+        if (response.success && response.data) {
+          setServiceAdvisors(response.data);
+        } else {
+          console.error("Failed to fetch service advisors:", response.message);
+        }
+      } catch (error) {
+        console.error("Error fetching service advisors:", error);
+      } finally {
+        setIsLoadingAdvisors(false);
+      }
+    };
+
+    if (open) {
+      fetchServiceAdvisors();
+    }
+  }, [open]);
 
   // Update form data when booking changes
   useEffect(() => {
     if (booking) {
       setFormData({
         carRegNo: booking.carRegNo,
-        checkinDate: booking.checkinDate,
-        promiseDate: booking.promiseDate,
+        checkinDate: booking.checkinDate
+          ? new Date(booking.checkinDate).toISOString().split("T")[0]
+          : "",
+        promiseDate: booking.promiseDate
+          ? new Date(booking.promiseDate).toISOString().split("T")[0]
+          : "",
         serviceAdvisorId: booking.serviceAdvisorId,
         bayId: booking.bayId,
         jobType: booking.jobType,
@@ -146,6 +176,79 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
         handleClose();
       } else {
         setApiError(response.message || "Failed to update booking");
+      }
+    } catch (error) {
+      setApiError("An unexpected error occurred. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleAssignToBay = async () => {
+    if (!booking) return;
+
+    setIsLoading(true);
+    setApiError("");
+
+    try {
+      const response = await bookingAPI.workflow.assignToBay(
+        booking.id,
+        formData.bayId
+      );
+
+      if (response.success) {
+        onSuccess();
+      } else {
+        setApiError(response.message || "Failed to assign to bay");
+      }
+    } catch (error) {
+      setApiError("An unexpected error occurred. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleAssignToNextJob = async () => {
+    if (!booking) return;
+
+    setIsLoading(true);
+    setApiError("");
+
+    try {
+      const response = await bookingAPI.workflow.moveToNextJob(
+        booking.id,
+        formData.bayId
+      );
+
+      if (response.success) {
+        onSuccess();
+      } else {
+        setApiError(response.message || "Failed to move to next job");
+      }
+    } catch (error) {
+      setApiError("An unexpected error occurred. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const startJob = async () => {
+    if (!booking) return;
+
+    setIsLoading(true);
+    setApiError("");
+
+    try {
+      const response = await bookingAPI.workflow.startJob(
+        booking.id,
+        formData.jobStartTime,
+        formData.jobEndTime
+      );
+
+      if (response.success) {
+        onSuccess();
+      } else {
+        setApiError(response.message || "Failed to start job");
       }
     } catch (error) {
       setApiError("An unexpected error occurred. Please try again.");
@@ -258,23 +361,37 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
               )}
             </div>
 
-            {/* Service Advisor ID */}
+            {/* Service Advisor */}
             <div className="space-y-2">
               <Label htmlFor="serviceAdvisorId">
-                Service Advisor ID <span className="text-red-500">*</span>
+                Service Advisor <span className="text-red-500">*</span>
               </Label>
-              <Input
-                id="serviceAdvisorId"
-                type="number"
-                value={formData.serviceAdvisorId}
-                onChange={(e) =>
-                  handleInputChange(
-                    "serviceAdvisorId",
-                    parseInt(e.target.value) || 0
-                  )
+              <Select
+                value={formData.serviceAdvisorId.toString()}
+                onValueChange={(value) =>
+                  handleInputChange("serviceAdvisorId", parseInt(value))
                 }
-                className={errors.serviceAdvisorId ? "border-red-500" : ""}
-              />
+              >
+                <SelectTrigger
+                  className={errors.serviceAdvisorId ? "border-red-500" : ""}
+                  disabled={isLoadingAdvisors}
+                >
+                  <SelectValue
+                    placeholder={
+                      isLoadingAdvisors
+                        ? "Loading..."
+                        : "Select Service Advisor"
+                    }
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  {serviceAdvisors.map((advisor) => (
+                    <SelectItem key={advisor.id} value={advisor.id.toString()}>
+                      {advisor.name} (ID: {advisor.id})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               {errors.serviceAdvisorId && (
                 <p className="text-red-500 text-xs">
                   {errors.serviceAdvisorId}
@@ -441,12 +558,24 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
                   variant="outline"
                   size="sm"
                   onClick={() => {
-                    // Handle workflow action
-                    console.log(
-                      `Executing: ${action} for booking ${booking.id}`
-                    );
-                    onClose();
+                    if (action === "Assign to Bay") {
+                      handleAssignToBay();
+                    }
+                    if (action === "Move to Next Job") {
+                      handleAssignToNextJob();
+                    } 
+                    if (action === "Start Job") {
+                      startJob();
+                    } 
+                    else {
+                      // Handle other workflow actions
+                      console.log(
+                        `Executing: ${action} for booking ${booking.id}`
+                      );
+                      onClose();
+                    }
                   }}
+                  disabled={isLoading}
                   className={
                     action === "Complete Job"
                       ? "bg-green-100 text-green-800 hover:bg-green-200 border-green-300"
@@ -454,10 +583,38 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
                       ? "bg-red-100 text-red-800 hover:bg-red-200 border-red-300"
                       : action === "Resume Job"
                       ? "bg-blue-100 text-blue-800 hover:bg-blue-200 border-blue-300"
-                      : "bg-toyota-red text-white hover:bg-toyota-red-dark border-toyota-red"
+                      : action === "Assign to Bay"
+                      ? "bg-toyota-red text-white hover:bg-toyota-red-dark border-toyota-red"
+                      : "bg-gray-100 text-gray-800 hover:bg-gray-200 border-gray-300"
                   }
                 >
-                  {action}
+                  {isLoading && action === "Assign to Bay" ? (
+                    <>
+                      <svg
+                        className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        ></circle>
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        ></path>
+                      </svg>
+                      Assigning...
+                    </>
+                  ) : (
+                    action
+                  )}
                 </Button>
               ))}
               {bookingUtils.getNextActions(booking.status).length === 0 && (
