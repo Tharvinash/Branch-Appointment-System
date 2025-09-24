@@ -72,6 +72,23 @@ public class BookingService {
     BookingEntity booking = bookingRepository.findById(id)
         .orElseThrow(() -> new RuntimeException("Booking not found"));
 
+    booking.setCarRegNo(dto.getCarRegNo());
+    booking.setCheckinDate(dto.getCheckinDate());
+    booking.setPromiseDate(dto.getPromiseDate());
+    if (dto.getServiceAdvisorId() != null) {
+      ServiceAdvisorEntity advisor = serviceAdvisorRepository.findById(dto.getServiceAdvisorId())
+          .orElseThrow(() -> new RuntimeException("Service Advisor not found with id: " + dto.getServiceAdvisorId()));
+      booking.setServiceAdvisor(advisor);
+    }
+    if (dto.getBayId() != null) {
+      BayEntity bay = bayRepository.findById(dto.getBayId())
+          .orElseThrow(() -> new RuntimeException("Bay not found with id: " + dto.getBayId()));
+      booking.setBay(bay);
+    }
+    booking.setJobType(dto.getJobType());
+
+
+
     BookingStatusEnum oldStatus = booking.getStatus();
     Long oldBayId = booking.getBay() != null ? booking.getBay().getId() : null;
 

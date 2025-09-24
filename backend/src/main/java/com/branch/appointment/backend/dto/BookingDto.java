@@ -6,7 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.time.LocalTime;
 
 @Data
@@ -15,8 +15,8 @@ import java.time.LocalTime;
 public class BookingDto {
   private Long id;
   private String carRegNo;
-  private LocalDateTime checkinDate;
-  private LocalDateTime promiseDate;
+  private LocalDate checkinDate;
+  private LocalDate promiseDate;
   private Long serviceAdvisorId;
   private Long bayId;
   private JobTypeEnum jobType;

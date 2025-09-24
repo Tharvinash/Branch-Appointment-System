@@ -8,7 +8,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.time.LocalTime;
 
 @Entity
@@ -27,10 +27,10 @@ public class BookingEntity {
   private String carRegNo;
 
   @Column(name = "Checkin_Date")
-  private LocalDateTime checkinDate;
+  private LocalDate checkinDate;
 
   @Column(name = "Promise_Date")
-  private LocalDateTime promiseDate;
+  private LocalDate promiseDate;
 
   @ManyToOne
   @JoinColumn(name = "Service_Advisor_Id")
