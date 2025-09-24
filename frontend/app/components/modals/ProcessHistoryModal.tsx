@@ -87,9 +87,9 @@ const ProcessHistoryModal: React.FC<ProcessHistoryModalProps> = ({
                     <div className="flex items-center space-x-2">
                       <div
                         className={`w-3 h-3 rounded-full ${
-                          step.status === "completed"
+                          step.toStatus === "REPAIR_COMPLETION"
                             ? "bg-green-500"
-                            : step.status === "started"
+                            : step.toStatus === "ACTIVE_BOARD"
                             ? "bg-blue-500"
                             : "bg-yellow-500"
                         }`}
