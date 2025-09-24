@@ -31,59 +31,56 @@ const DownloadReportModal: React.FC<DownloadReportModalProps> = ({
   const handleDownload = async () => {
     setIsDownloading(true);
     try {
-      // Filter bookings if car reg no is provided
-      const filteredBookings = carRegNo.trim()
-        ? bookings.filter((b) =>
-            b.carRegNo.toLowerCase().includes(carRegNo.toLowerCase()),
-          )
-        : bookings;
+      // Call the backend API to download the Excel report
+      const token = localStorage.getItem("auth_token");
+      const API_BASE_URL =
+        process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080";
 
-      // Create CSV content
-      const csvContent = [
-        [
-          "Car Registration No",
-          "Service Advisor ID",
-          "Check-in Date",
-          "Promise Date",
-          "Job Type",
-          "Status",
-          "Job Start Time",
-          "Job End Time",
-          "Bay ID",
-          "Job Type",
-        ],
-        ...filteredBookings.map((booking) => [
-          booking.carRegNo,
-          booking.serviceAdvisorId,
-          new Date(booking.checkinDate).toLocaleDateString(),
-          new Date(booking.promiseDate).toLocaleDateString(),
-          bookingUtils.getJobTypeText(booking.jobType),
-          bookingUtils.getStatusText(booking.status),
-          booking.jobStartTime || "",
-          booking.jobEndTime || "",
-          booking.bayId,
-          bookingUtils.getJobTypeText(booking.jobType),
-        ]),
-      ]
-        .map((row) => row.join(","))
-        .join("\n");
+      // Build the URL with optional carRegNo parameter
+      const url = new URL(`${API_BASE_URL}/bookings/processes/download`);
+      if (carRegNo.trim()) {
+        url.searchParams.append("carRegNo", carRegNo.trim());
+      }
 
-      // Create and download file
-      const blob = new Blob([csvContent], { type: "text/csv" });
-      const url = window.URL.createObjectURL(blob);
+      const response = await fetch(url.toString(), {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      // Get the blob from the response
+      const blob = await response.blob();
+
+      // Get the filename from the Content-Disposition header or use a default
+      const contentDisposition = response.headers.get("Content-Disposition");
+      let filename = "booking_processes.xlsx";
+
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename="(.+)"/);
+        if (filenameMatch) {
+          filename = filenameMatch[1];
+        }
+      }
+
+      // Create and download the file
+      const downloadUrl = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
-      a.href = url;
-      a.download = `booking-report-${
-        new Date().toISOString().split("T")[0]
-      }.csv`;
+      a.href = downloadUrl;
+      a.download = filename;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
+      window.URL.revokeObjectURL(downloadUrl);
 
       onClose();
     } catch (error) {
       console.error("Failed to download report:", error);
+      alert("Failed to download report. Please try again.");
     } finally {
       setIsDownloading(false);
     }
@@ -95,8 +92,8 @@ const DownloadReportModal: React.FC<DownloadReportModalProps> = ({
         <DialogHeader>
           <DialogTitle>Download Report</DialogTitle>
           <DialogDescription>
-            Export booking data to CSV format. Optionally filter by car
-            registration number.
+            Export booking process data to Excel format. Optionally filter by
+            car registration number.
           </DialogDescription>
         </DialogHeader>
 
@@ -112,8 +109,8 @@ const DownloadReportModal: React.FC<DownloadReportModalProps> = ({
             />
             <p className="text-xs text-gray-500">
               {carRegNo.trim()
-                ? `Will download bookings for vehicles containing "${carRegNo}"`
-                : "Will download all booking information and processes"}
+                ? `Will download Excel report for vehicles containing "${carRegNo}"`
+                : "Will download Excel report with all booking processes"}
             </p>
           </div>
         </div>
@@ -147,7 +144,7 @@ const DownloadReportModal: React.FC<DownloadReportModalProps> = ({
                     d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                   />
                 </svg>
-                Download CSV
+                Download Excel
               </>
             )}
           </Button>
