@@ -12,10 +12,11 @@ import com.branch.appointment.backend.repository.BayRepository;
 import com.branch.appointment.backend.repository.BookingProcessRepository;
 import com.branch.appointment.backend.repository.BookingRepository;
 import com.branch.appointment.backend.repository.ServiceAdvisorRepository;
-import jakarta.transaction.Transactional;
+
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -35,6 +36,14 @@ public class BookingService {
         .map(this::mapToDto)
         .toList();
   }
+
+  @Transactional(readOnly = true)
+  public BookingDto getBookingById(Long id) {
+    BookingEntity booking = bookingRepository.findById(id)
+        .orElseThrow(() -> new RuntimeException("Booking not found with id: " + id));
+    return mapToDto(booking);
+  }
+
 
   public BookingDto createBooking(BookingDto dto) {
     BookingEntity booking = new BookingEntity();
