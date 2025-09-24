@@ -77,57 +77,9 @@ const BookingDashboard: React.FC = () => {
     fetchBookings();
   }, []);
 
-  // Workflow functions
-  const handleStatusTransition = async (booking: Booking, action: string) => {
-    try {
-      let response;
-
-      switch (action) {
-        case "Assign to Bay":
-          response = await bookingAPI.workflow.assignToBay(
-            booking.id,
-            booking.bayId
-          );
-          break;
-        case "Move to Next Job":
-          response = await bookingAPI.workflow.moveToNextJob(booking.id, booking.bayId);
-          break;
-        case "Start Job":
-          response = await bookingAPI.workflow.startJob(
-            booking.id,
-            booking.jobStartTime || new Date().toISOString().split("T")[1],
-            booking.jobEndTime ||
-              new Date(Date.now() + 2 * 60 * 60 * 1000)
-                .toISOString()
-                .split("T")[1]
-          );
-          break;
-        case "Pause Job":
-          response = await bookingAPI.workflow.pauseJob(booking.id);
-          break;
-        case "Resume Job":
-          response = await bookingAPI.workflow.resumeJob(booking.id);
-          break;
-        case "Complete Job":
-          response = await bookingAPI.workflow.completeJob(booking.id);
-          break;
-        default:
-          return;
-      }
-
-      if (response.success && response.data) {
-        setBookings((prevBookings) =>
-          prevBookings.map((b) => (b.id === booking.id ? response.data! : b))
-        );
-      }
-    } catch (error) {
-      console.error("Failed to update booking status:", error);
-    }
-  };
-
   const getBookingPosition = (booking: Booking) => {
-    const startTime = booking.jobStartTime?.slice(0,5) || "08:00";
-    const endTime = booking.jobEndTime?.slice(0,5) || "10:00";
+    const startTime = booking.jobStartTime?.slice(0, 5) || "08:00";
+    const endTime = booking.jobEndTime?.slice(0, 5) || "10:00";
     const startIndex = timeSlots.indexOf(startTime);
     const endIndex = timeSlots.indexOf(endTime);
     const duration = endIndex - startIndex;
@@ -652,11 +604,7 @@ const BookingDashboard: React.FC = () => {
 
                     {/* Booking cards */}
                     {bayBookings
-                      .filter(
-                        (b) =>
-                          b.status === "ACTIVE_BOARD" ||
-                          b.status === "JOB_STOPPAGE"
-                      )
+                      .filter((b) => b.status === "ACTIVE_BOARD")
                       .map((booking) => {
                         const position = getBookingPosition(booking);
                         return (
@@ -747,7 +695,7 @@ const BookingDashboard: React.FC = () => {
       <AddBookingModal
         open={isAddBookingModalOpen}
         onClose={() => setIsAddBookingModalOpen(false)}
-        onSuccess={() => {}}
+        onSuccess={() => fetchBookings()}
       />
     </div>
   );

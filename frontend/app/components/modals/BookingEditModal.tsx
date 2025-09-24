@@ -232,6 +232,69 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
     }
   };
 
+  const handlePauseJob = async () => {
+    if (!booking) return;
+
+    setIsLoading(true);
+    setApiError("");
+
+    try {
+      const response = await bookingAPI.workflow.pauseJob(booking.id);
+
+      if (response.success) {
+        onSuccess();
+      } else {
+        setApiError(response.message || "Failed to move to next job");
+      }
+    } catch (error) {
+      setApiError("An unexpected error occurred. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleCompleteJob = async () => {
+    if (!booking) return;
+
+    setIsLoading(true);
+    setApiError("");
+
+    try {
+      const response = await bookingAPI.workflow.completeJob(booking.id);
+
+      if (response.success) {
+        onSuccess();
+      } else {
+        setApiError(response.message || "Failed to move to next job");
+      }
+    } catch (error) {
+      setApiError("An unexpected error occurred. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleResumeJob = async () => {
+    if (!booking) return;
+
+    setIsLoading(true);
+    setApiError("");
+
+    try {
+      const response = await bookingAPI.workflow.resumeJob(booking.id);
+
+      if (response.success) {
+        onSuccess();
+      } else {
+        setApiError(response.message || "Failed to move to next job");
+      }
+    } catch (error) {
+      setApiError("An unexpected error occurred. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const startJob = async () => {
     if (!booking) return;
 
@@ -566,6 +629,15 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
                     }
                     if (action === "Start Job") {
                       startJob();
+                    }
+                    if (action === "Pause Job") {
+                      handlePauseJob();
+                    }
+                    if (action === "Complete Job") {
+                      handleCompleteJob();
+                    }
+                    if (action === "Resume Job") {
+                      handleResumeJob();
                     } else {
                       // Handle other workflow actions
                       console.log(

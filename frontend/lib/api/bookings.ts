@@ -672,7 +672,7 @@ export const bookingValidators = {
     const promised = new Date(promiseDate);
     const checkin = new Date(checkinDate);
 
-    if (promised <= checkin) return "Promise date must be after check-in date";
+    if (promised < checkin) return "Promise date must be after check-in date";
     return null;
   },
 
