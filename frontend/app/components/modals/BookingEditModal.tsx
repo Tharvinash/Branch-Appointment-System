@@ -563,11 +563,10 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
                     }
                     if (action === "Move to Next Job") {
                       handleAssignToNextJob();
-                    } 
+                    }
                     if (action === "Start Job") {
                       startJob();
-                    } 
-                    else {
+                    } else {
                       // Handle other workflow actions
                       console.log(
                         `Executing: ${action} for booking ${booking.id}`

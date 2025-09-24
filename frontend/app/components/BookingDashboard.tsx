@@ -54,7 +54,6 @@ const BookingDashboard: React.FC = () => {
   const fetchBays = async () => {
     try {
       const response = await bayAPI.getAllBays();
-      console.log("response", response);
 
       if (response.success && response.data) {
         if (response.success && response.data) {
@@ -91,7 +90,7 @@ const BookingDashboard: React.FC = () => {
           );
           break;
         case "Move to Next Job":
-          response = await bookingAPI.workflow.moveToNextJob(booking.id);
+          response = await bookingAPI.workflow.moveToNextJob(booking.id, booking.bayId);
           break;
         case "Start Job":
           response = await bookingAPI.workflow.startJob(
@@ -127,8 +126,8 @@ const BookingDashboard: React.FC = () => {
   };
 
   const getBookingPosition = (booking: Booking) => {
-    const startTime = booking.jobStartTime || "08:00";
-    const endTime = booking.jobEndTime || "10:00";
+    const startTime = booking.jobStartTime?.slice(0,5) || "08:00";
+    const endTime = booking.jobEndTime?.slice(0,5) || "10:00";
     const startIndex = timeSlots.indexOf(startTime);
     const endIndex = timeSlots.indexOf(endTime);
     const duration = endIndex - startIndex;
@@ -175,29 +174,6 @@ const BookingDashboard: React.FC = () => {
   const handleViewHistory = (booking: Booking) => {
     setSelectedBookingForHistory(booking);
     setIsProcessHistoryModalOpen(true);
-  };
-
-  const handleAddBooking = async (newBookingData: Omit<Booking, "id">) => {
-    try {
-      // Generate a unique ID for the new booking
-      const newBooking: Booking = {
-        ...newBookingData,
-        id: Date.now(),
-      };
-
-      // Add to local state (in a real app, this would be an API call)
-      setBookings((prevBookings) => [...prevBookings, newBooking]);
-      setIsAddBookingModalOpen(false);
-
-      // Here you would typically make an API call to save the booking
-      // const response = await bookingAPI.createBooking(newBookingData);
-      // if (response.success) {
-      //   setBookings((prevBookings) => [...prevBookings, response.data]);
-      //   setIsAddBookingModalOpen(false);
-      // }
-    } catch (error) {
-      console.error("Failed to add booking:", error);
-    }
   };
 
   return (
@@ -492,8 +468,8 @@ const BookingDashboard: React.FC = () => {
                   key={bay.id}
                   className="p-2 bg-white rounded border h-16 flex flex-col justify-center"
                 >
-                  <div className="text-xs font-bold">{bay.name}</div>
-                  <div className="text-xs text-gray-600">{bay.process}</div>
+                  <div className="text-xs font-bold">{bay.number}</div>
+                  <div className="text-xs text-gray-600">{bay.name}</div>
                 </div>
               ))}
             </div>
@@ -618,7 +594,7 @@ const BookingDashboard: React.FC = () => {
         {/* Bay Rows */}
         <div className="max-h-96 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
           {bays.map((bay, bayIndex) => {
-            const bayBookings = getBookingsForBay(parseInt(bay.id));
+            const bayBookings = getBookingsForBay(bay.id);
 
             return (
               <div
@@ -631,10 +607,10 @@ const BookingDashboard: React.FC = () => {
                 <div className="w-32 p-3 border-r-2 border-gray-300 bg-inherit flex-shrink-0">
                   <div className="h-40 flex flex-col justify-center">
                     <div className="text-sm font-bold text-toyota-black">
-                      {bay.name}
+                      {bay.number}
                     </div>
                     <div className="text-xs text-toyota-text-secondary font-medium">
-                      {bay.process}
+                      {bay.name}
                     </div>
                   </div>
                 </div>
@@ -771,8 +747,7 @@ const BookingDashboard: React.FC = () => {
       <AddBookingModal
         open={isAddBookingModalOpen}
         onClose={() => setIsAddBookingModalOpen(false)}
-        onAdd={handleAddBooking}
-        processOptions={processOptions}
+        onSuccess={() => {}}
       />
     </div>
   );

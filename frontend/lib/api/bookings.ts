@@ -294,7 +294,10 @@ export const bookingAPI = {
     },
 
     // BAY_QUEUE → NEXT_JOB
-    moveToNextJob: async (bookingId: number, bayId: number): Promise<BookingResponse> => {
+    moveToNextJob: async (
+      bookingId: number,
+      bayId: number
+    ): Promise<BookingResponse> => {
       try {
         // First get the current booking data
         const currentBooking = await bookingAPI.getBooking(bookingId);
