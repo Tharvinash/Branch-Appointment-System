@@ -9,5 +9,9 @@ import java.util.List;
 @Repository
 public interface BookingProcessRepository extends JpaRepository<BookingProcessEntity, Long> {
   List<BookingProcessEntity> findByBookingIdOrderByChangedAtAsc(Long bookingId);
+
+  List<BookingProcessEntity> findByBooking_CarRegNoOrderByChangedAtAsc(String carRegNo);
+
+  List<BookingProcessEntity> findAllByOrderByBooking_CarRegNoAscChangedAtAsc();
 }
 

@@ -4,7 +4,9 @@ import com.branch.appointment.backend.dto.BookingDto;
 import com.branch.appointment.backend.dto.BookingProcessDto;
 import com.branch.appointment.backend.service.BookingService;
 import lombok.AllArgsConstructor;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -49,6 +51,18 @@ public class BookingController {
   @GetMapping("/{id}/history")
   public ResponseEntity<List<BookingProcessDto>> getBookingHistory(@PathVariable Long id) {
     return ResponseEntity.ok(bookingService.getHistory(id));
+  }
+
+  @GetMapping("/processes/download")
+  public ResponseEntity<byte[]> downloadBookingProcesses(@RequestParam(required = false) String carRegNo) {
+    byte[] excelFile = bookingService.generateProcessReport(carRegNo);
+
+    String fileName = (carRegNo != null ? carRegNo : "all") + "_processes.xlsx";
+
+    return ResponseEntity.ok()
+        .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + fileName)
+        .contentType(MediaType.APPLICATION_OCTET_STREAM)
+        .body(excelFile);
   }
 }
 

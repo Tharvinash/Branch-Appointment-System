@@ -15,9 +15,15 @@ import com.branch.appointment.backend.repository.ServiceAdvisorRepository;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -184,6 +190,58 @@ public class BookingService {
   private BayDto mapBayToDto(BayEntity entity) {
     if (entity == null) return null;
     return new BayDto(entity.getId(), entity.getBayName(), entity.getBayNumber(), entity.getStatus());
+  }
+
+  public byte[] generateProcessReport(String carRegNo) {
+    List<BookingProcessEntity> processes;
+
+    if (carRegNo != null && !carRegNo.isEmpty()) {
+      processes = processRepository.findByBooking_CarRegNoOrderByChangedAtAsc(carRegNo);
+    } else {
+      processes = processRepository.findAllByOrderByBooking_CarRegNoAscChangedAtAsc();
+    }
+
+    try (Workbook workbook = new XSSFWorkbook()) {
+      Sheet sheet = workbook.createSheet("Booking Processes");
+      int rowIdx = 0;
+
+      // Header row
+      Row header = sheet.createRow(rowIdx++);
+      header.createCell(0).setCellValue("Car No Plate");
+      header.createCell(1).setCellValue("From Status");
+      header.createCell(2).setCellValue("To Status");
+      header.createCell(3).setCellValue("Changed At");
+      header.createCell(4).setCellValue("From Process");
+      header.createCell(5).setCellValue("To Process");
+
+      String lastCarNo = null;
+
+      for (BookingProcessEntity process : processes) {
+        String currentCarNo = process.getBooking().getCarRegNo();
+
+        // Leave a blank row between different carRegNo
+        if (lastCarNo != null && !lastCarNo.equals(currentCarNo)) {
+          rowIdx++;
+        }
+
+        Row row = sheet.createRow(rowIdx++);
+        row.createCell(0).setCellValue(currentCarNo);
+        row.createCell(1).setCellValue(process.getFromStatus());
+        row.createCell(2).setCellValue(process.getToStatus());
+        row.createCell(3).setCellValue(process.getChangedAt() != null ? process.getChangedAt().toString() : "");
+        row.createCell(4).setCellValue(process.getFromProcess() != null ? process.getFromProcess().getBayName() : "");
+        row.createCell(5).setCellValue(process.getToProcess() != null ? process.getToProcess().getBayName() : "");
+
+        lastCarNo = currentCarNo;
+      }
+
+      ByteArrayOutputStream bos = new ByteArrayOutputStream();
+      workbook.write(bos);
+      return bos.toByteArray();
+
+    } catch (IOException e) {
+      throw new RuntimeException("Failed to generate Excel report", e);
+    }
   }
 }
 
