@@ -253,7 +253,7 @@ export default function AdminTechniciansPage() {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {technicians.map((technician, index) => {
                     const statusInfo = technicianUtils.formatStatus(
-                      technician.status
+                      technician.status,
                     );
                     return (
                       <tr

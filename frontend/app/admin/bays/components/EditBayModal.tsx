@@ -55,7 +55,7 @@ export default function EditBayModal({
   }, [bay]);
 
   const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -218,9 +218,7 @@ export default function EditBayModal({
                 handleInputChange(event);
               }}
             >
-              <SelectTrigger
-                className={errors.status ? "border-red-500" : ""}
-              >
+              <SelectTrigger className={errors.status ? "border-red-500" : ""}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>

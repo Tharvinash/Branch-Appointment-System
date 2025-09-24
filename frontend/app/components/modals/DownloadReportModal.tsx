@@ -34,7 +34,7 @@ const DownloadReportModal: React.FC<DownloadReportModalProps> = ({
       // Filter bookings if car reg no is provided
       const filteredBookings = carRegNo.trim()
         ? bookings.filter((b) =>
-            b.carRegNo.toLowerCase().includes(carRegNo.toLowerCase())
+            b.carRegNo.toLowerCase().includes(carRegNo.toLowerCase()),
           )
         : bookings;
 

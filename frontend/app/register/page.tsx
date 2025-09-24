@@ -17,7 +17,7 @@ export default function RegisterPage() {
   const [apiError, setApiError] = useState("");
 
   const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -43,7 +43,7 @@ export default function RegisterPage() {
 
     const confirmPasswordError = validators.confirmPassword(
       formData.password,
-      formData.confirmPassword
+      formData.confirmPassword,
     );
     if (confirmPasswordError) newErrors.confirmPassword = confirmPasswordError;
 

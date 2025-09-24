@@ -110,7 +110,7 @@ const API_BASE_URL =
 async function apiCall<T>(
   endpoint: string,
   data: any,
-  method: "POST" | "GET" | "PUT" | "PATCH" | "DELETE" = "POST"
+  method: "POST" | "GET" | "PUT" | "PATCH" | "DELETE" = "POST",
 ): Promise<T> {
   const token = tokenManager.getToken();
 
@@ -137,7 +137,7 @@ async function apiCall<T>(
 export const bookingAPI = {
   // Create new booking (Check-in)
   createBooking: async (
-    bookingData: CreateBookingRequest
+    bookingData: CreateBookingRequest,
   ): Promise<BookingResponse> => {
     try {
       const response = await apiCall<Booking>("/bookings", bookingData, "POST");
@@ -177,7 +177,7 @@ export const bookingAPI = {
       const response = await apiCall<Booking>(
         `/bookings/${bookingId}`,
         {},
-        "GET"
+        "GET",
       );
       return {
         success: true,
@@ -195,13 +195,13 @@ export const bookingAPI = {
   // Update booking status and details
   updateBooking: async (
     bookingId: number,
-    updateData: UpdateBookingRequest
+    updateData: UpdateBookingRequest,
   ): Promise<BookingResponse> => {
     try {
       const response = await apiCall<Booking>(
         `/bookings/${bookingId}`,
         updateData,
-        "PUT"
+        "PUT",
       );
 
       return {
@@ -235,13 +235,13 @@ export const bookingAPI = {
 
   // Get booking history
   getBookingHistory: async (
-    bookingId: number
+    bookingId: number,
   ): Promise<ProcessHistoryResponse> => {
     try {
       const response = await apiCall<ProcessStep[]>(
         `/bookings/${bookingId}/history`,
         {},
-        "GET"
+        "GET",
       );
       return {
         success: true,
@@ -263,7 +263,7 @@ export const bookingAPI = {
     // QUEUING → BAY_QUEUE
     assignToBay: async (
       bookingId: number,
-      bayId: number
+      bayId: number,
     ): Promise<BookingResponse> => {
       try {
         // First get the current booking data
@@ -296,7 +296,7 @@ export const bookingAPI = {
     // BAY_QUEUE → NEXT_JOB
     moveToNextJob: async (
       bookingId: number,
-      bayId: number
+      bayId: number,
     ): Promise<BookingResponse> => {
       try {
         // First get the current booking data
@@ -332,7 +332,7 @@ export const bookingAPI = {
     startJob: async (
       bookingId: number,
       jobStartTime: string,
-      jobEndTime: string
+      jobEndTime: string,
     ): Promise<BookingResponse> => {
       try {
         // First get the current booking data
@@ -464,13 +464,13 @@ export const bookingAPI = {
         notes?: string;
         bayId?: string;
         technicianId?: string;
-      }
+      },
     ): Promise<ProcessStepResponse> => {
       try {
         const response = await apiCall<ProcessStepResponse>(
           `/api/bookings/${bookingId}/processes`,
           processData,
-          "POST"
+          "POST",
         );
         return response;
       } catch (error) {
@@ -493,13 +493,13 @@ export const bookingAPI = {
         notes?: string;
         bayId?: string;
         technicianId?: string;
-      }
+      },
     ): Promise<ProcessStepResponse> => {
       try {
         const response = await apiCall<ProcessStepResponse>(
           `/api/processes/${processId}`,
           updateData,
-          "PATCH"
+          "PATCH",
         );
         return response;
       } catch (error) {
@@ -513,13 +513,13 @@ export const bookingAPI = {
 
     // Fetch process history for a booking
     getProcessHistory: async (
-      bookingId: string
+      bookingId: string,
     ): Promise<ProcessHistoryResponse> => {
       try {
         const response = await apiCall<ProcessHistoryResponse>(
           `/api/bookings/${bookingId}/processes`,
           {},
-          "GET"
+          "GET",
         );
         return response;
       } catch (error) {
@@ -596,7 +596,7 @@ export const bookingUtils = {
 
   canTransitionTo: (
     currentStatus: Booking["status"],
-    targetStatus: Booking["status"]
+    targetStatus: Booking["status"],
   ) => {
     const validTransitions: Record<Booking["status"], Booking["status"][]> = {
       QUEUING: ["BAY_QUEUE"],

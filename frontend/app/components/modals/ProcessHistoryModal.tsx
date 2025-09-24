@@ -90,8 +90,8 @@ const ProcessHistoryModal: React.FC<ProcessHistoryModalProps> = ({
                           step.toStatus === "REPAIR_COMPLETION"
                             ? "bg-green-500"
                             : step.toStatus === "ACTIVE_BOARD"
-                            ? "bg-blue-500"
-                            : "bg-yellow-500"
+                              ? "bg-blue-500"
+                              : "bg-yellow-500"
                         }`}
                       ></div>
                       <span className="font-medium text-toyota-black">

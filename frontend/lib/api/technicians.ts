@@ -36,7 +36,7 @@ export interface ApiResponse<T> {
 // API Helper Functions
 const apiCall = async <T>(
   endpoint: string,
-  options: RequestInit = {}
+  options: RequestInit = {},
 ): Promise<ApiResponse<T>> => {
   try {
     const token = tokenManager.getToken();
@@ -88,7 +88,7 @@ export const technicianAPI = {
 
   // Create new technician
   createTechnician: async (
-    data: CreateTechnicianData
+    data: CreateTechnicianData,
   ): Promise<ApiResponse<Technician>> => {
     return apiCall<Technician>("/technicians", {
       method: "POST",
@@ -99,7 +99,7 @@ export const technicianAPI = {
   // Update technician
   updateTechnician: async (
     id: number,
-    data: UpdateTechnicianData
+    data: UpdateTechnicianData,
   ): Promise<ApiResponse<Technician>> => {
     return apiCall<Technician>(`/technicians/${id}`, {
       method: "PUT",
@@ -151,7 +151,7 @@ export const technicianUtils = {
   // Filter technicians by status
   filterByStatus: (
     technicians: Technician[],
-    status: "AVAILABLE" | "ON_LEAVE"
+    status: "AVAILABLE" | "ON_LEAVE",
   ): Technician[] => {
     return technicians.filter((technician) => technician.status === status);
   },
@@ -159,7 +159,7 @@ export const technicianUtils = {
   // Search technicians by name
   searchTechnicians: (
     technicians: Technician[],
-    query: string
+    query: string,
   ): Technician[] => {
     if (!query.trim()) return technicians;
 
@@ -167,7 +167,7 @@ export const technicianUtils = {
     return technicians.filter(
       (technician) =>
         technician.name.toLowerCase().includes(searchQuery) ||
-        technician.id.toString().includes(searchQuery)
+        technician.id.toString().includes(searchQuery),
     );
   },
 
@@ -199,7 +199,7 @@ export const technicianUtils = {
   getStatistics: (technicians: Technician[]) => {
     const total = technicians.length;
     const available = technicians.filter(
-      (t) => t.status === "AVAILABLE"
+      (t) => t.status === "AVAILABLE",
     ).length;
     const onLeave = technicians.filter((t) => t.status === "ON_LEAVE").length;
 

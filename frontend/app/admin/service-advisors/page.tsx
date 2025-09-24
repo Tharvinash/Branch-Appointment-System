@@ -65,7 +65,7 @@ export default function AdminServiceAdvisorsPage() {
 
       if (response.success && response.data) {
         setServiceAdvisors(
-          serviceAdvisorUtils.sortServiceAdvisors(response.data)
+          serviceAdvisorUtils.sortServiceAdvisors(response.data),
         );
       } else {
         setError(response.message || "Failed to fetch service advisors");
@@ -255,7 +255,7 @@ export default function AdminServiceAdvisorsPage() {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {serviceAdvisors.map((serviceAdvisor, index) => {
                     const statusInfo = serviceAdvisorUtils.formatStatus(
-                      serviceAdvisor.status
+                      serviceAdvisor.status,
                     );
                     return (
                       <tr

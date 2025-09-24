@@ -29,7 +29,7 @@ export default function DeleteServiceAdvisorDialog({
 
     try {
       const response = await serviceAdvisorAPI.deleteServiceAdvisor(
-        serviceAdvisor.id
+        serviceAdvisor.id,
       );
 
       if (response.success) {

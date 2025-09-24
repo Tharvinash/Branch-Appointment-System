@@ -42,7 +42,7 @@ export default function EditServiceAdvisorModal({
   }, [serviceAdvisor]);
 
   const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -78,7 +78,7 @@ export default function EditServiceAdvisorModal({
     try {
       const response = await serviceAdvisorAPI.updateServiceAdvisor(
         serviceAdvisor.id,
-        formData
+        formData,
       );
 
       if (response.success) {

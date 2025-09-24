@@ -123,7 +123,7 @@ export const tokenManager = {
 async function apiCall<T>(
   endpoint: string,
   data: any,
-  method: "POST" | "GET" | "PUT" | "DELETE" = "POST"
+  method: "POST" | "GET" | "PUT" | "DELETE" = "POST",
 ): Promise<T> {
   const token = tokenManager.getToken();
 
@@ -187,7 +187,7 @@ export const authAPI = {
     try {
       const response = await apiCall<RegisterResponse>(
         "/auth/register",
-        userData
+        userData,
       );
 
       return {
@@ -286,7 +286,7 @@ export const validators = {
 
   confirmPassword: (
     password: string,
-    confirmPassword: string
+    confirmPassword: string,
   ): string | null => {
     if (!confirmPassword) return "Please confirm your password";
     if (password !== confirmPassword) return "Passwords do not match";

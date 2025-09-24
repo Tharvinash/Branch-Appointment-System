@@ -36,7 +36,7 @@ export interface ApiResponse<T> {
 // API Helper Functions
 const apiCall = async <T>(
   endpoint: string,
-  options: RequestInit = {}
+  options: RequestInit = {},
 ): Promise<ApiResponse<T>> => {
   try {
     const token = tokenManager.getToken();
@@ -83,14 +83,14 @@ export const serviceAdvisorAPI = {
 
   // Get service advisor by ID
   getServiceAdvisorById: async (
-    id: number
+    id: number,
   ): Promise<ApiResponse<ServiceAdvisor>> => {
     return apiCall<ServiceAdvisor>(`/service-advisors/${id}`);
   },
 
   // Create new service advisor
   createServiceAdvisor: async (
-    data: CreateServiceAdvisorData
+    data: CreateServiceAdvisorData,
   ): Promise<ApiResponse<ServiceAdvisor>> => {
     return apiCall<ServiceAdvisor>("/service-advisors", {
       method: "POST",
@@ -101,7 +101,7 @@ export const serviceAdvisorAPI = {
   // Update service advisor
   updateServiceAdvisor: async (
     id: number,
-    data: UpdateServiceAdvisorData
+    data: UpdateServiceAdvisorData,
   ): Promise<ApiResponse<ServiceAdvisor>> => {
     return apiCall<ServiceAdvisor>(`/service-advisors/${id}`, {
       method: "PUT",
@@ -147,7 +147,7 @@ export const serviceAdvisorValidators = {
 export const serviceAdvisorUtils = {
   // Sort service advisors by name
   sortServiceAdvisors: (
-    serviceAdvisors: ServiceAdvisor[]
+    serviceAdvisors: ServiceAdvisor[],
   ): ServiceAdvisor[] => {
     return [...serviceAdvisors].sort((a, b) => a.name.localeCompare(b.name));
   },
@@ -155,17 +155,17 @@ export const serviceAdvisorUtils = {
   // Filter service advisors by status
   filterByStatus: (
     serviceAdvisors: ServiceAdvisor[],
-    status: "AVAILABLE" | "ON_LEAVE"
+    status: "AVAILABLE" | "ON_LEAVE",
   ): ServiceAdvisor[] => {
     return serviceAdvisors.filter(
-      (serviceAdvisor) => serviceAdvisor.status === status
+      (serviceAdvisor) => serviceAdvisor.status === status,
     );
   },
 
   // Search service advisors by name
   searchServiceAdvisors: (
     serviceAdvisors: ServiceAdvisor[],
-    query: string
+    query: string,
   ): ServiceAdvisor[] => {
     if (!query.trim()) return serviceAdvisors;
 
@@ -173,7 +173,7 @@ export const serviceAdvisorUtils = {
     return serviceAdvisors.filter(
       (serviceAdvisor) =>
         serviceAdvisor.name.toLowerCase().includes(searchQuery) ||
-        serviceAdvisor.id.toString().includes(searchQuery)
+        serviceAdvisor.id.toString().includes(searchQuery),
     );
   },
 
@@ -205,10 +205,10 @@ export const serviceAdvisorUtils = {
   getStatistics: (serviceAdvisors: ServiceAdvisor[]) => {
     const total = serviceAdvisors.length;
     const available = serviceAdvisors.filter(
-      (s) => s.status === "AVAILABLE"
+      (s) => s.status === "AVAILABLE",
     ).length;
     const onLeave = serviceAdvisors.filter(
-      (s) => s.status === "ON_LEAVE"
+      (s) => s.status === "ON_LEAVE",
     ).length;
 
     return {
