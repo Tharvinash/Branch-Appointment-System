@@ -80,11 +80,7 @@ public class BookingService {
           .orElseThrow(() -> new RuntimeException("Service Advisor not found with id: " + dto.getServiceAdvisorId()));
       booking.setServiceAdvisor(advisor);
     }
-    if (dto.getBayId() != null) {
-      BayEntity bay = bayRepository.findById(dto.getBayId())
-          .orElseThrow(() -> new RuntimeException("Bay not found with id: " + dto.getBayId()));
-      booking.setBay(bay);
-    }
+
     booking.setJobType(dto.getJobType());
 
 
