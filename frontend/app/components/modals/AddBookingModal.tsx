@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Booking } from "@/lib/api/bookings";
+import { Booking, bookingAPI, bookingValidators } from "@/lib/api/bookings";
 import {
   Dialog,
   DialogContent,
@@ -24,96 +24,129 @@ import {
 interface AddBookingModalProps {
   open: boolean;
   onClose: () => void;
-  onAdd: (booking: Omit<Booking, "id">) => void;
-  processOptions: string[];
+  onSuccess: () => void;
 }
 
 const AddBookingModal: React.FC<AddBookingModalProps> = ({
   open,
   onClose,
-  onAdd,
-  processOptions,
+  onSuccess,
 }) => {
   const [formData, setFormData] = useState({
-    vehicleNo: "",
-    checkInDate: "",
-    promisedDate: "",
-    sva: "",
-    currentProcess: "",
-    priority: "medium" as "low" | "medium" | "high",
-    flow: "",
+    carRegNo: "",
+    checkinDate: "",
+    promiseDate: "",
+    serviceAdvisorId: 0,
+    bayId: 0,
+    jobType: "MEDIUM" as "LIGHT" | "MEDIUM" | "HEAVY",
+    status: "QUEUING" as
+      | "QUEUING"
+      | "BAY_QUEUE"
+      | "NEXT_JOB"
+      | "ACTIVE_BOARD"
+      | "JOB_STOPPAGE"
+      | "REPAIR_COMPLETION",
+    jobStartTime: "",
+    jobEndTime: "",
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isLoading, setIsLoading] = useState(false);
+  const [apiError, setApiError] = useState("");
 
-  const handleInputChange = (field: string, value: string) => {
+  const handleInputChange = (field: string, value: string | number) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
     // Clear error when user starts typing
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: "" }));
     }
+    if (apiError) setApiError("");
   };
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.vehicleNo.trim()) {
-      newErrors.vehicleNo = "Registration number is required";
-    }
+    const carRegNoError = bookingValidators.carRegNo(formData.carRegNo);
+    if (carRegNoError) newErrors.carRegNo = carRegNoError;
 
-    if (!formData.checkInDate) {
-      newErrors.checkInDate = "Check-in date is required";
-    }
+    const checkinDateError = bookingValidators.checkinDate(
+      formData.checkinDate
+    );
+    if (checkinDateError) newErrors.checkinDate = checkinDateError;
 
-    if (!formData.promisedDate) {
-      newErrors.promisedDate = "Promised date is required";
-    }
+    const promiseDateError = bookingValidators.promiseDate(
+      formData.promiseDate,
+      formData.checkinDate
+    );
+    if (promiseDateError) newErrors.promiseDate = promiseDateError;
 
-    if (!formData.sva.trim()) {
-      newErrors.sva = "SVA is required";
-    }
+    const serviceAdvisorIdError = bookingValidators.serviceAdvisorId(
+      formData.serviceAdvisorId
+    );
+    if (serviceAdvisorIdError)
+      newErrors.serviceAdvisorId = serviceAdvisorIdError;
 
-    if (!formData.currentProcess) {
-      newErrors.currentProcess = "Job start process is required";
-    }
+    const bayIdError = bookingValidators.bayId(formData.bayId);
+    if (bayIdError) newErrors.bayId = bayIdError;
 
-    // Validate date logic
-    if (formData.checkInDate && formData.promisedDate) {
-      const checkInDate = new Date(formData.checkInDate);
-      const promisedDate = new Date(formData.promisedDate);
-
-      if (promisedDate < checkInDate) {
-        newErrors.promisedDate = "Promised date cannot be before check-in date";
-      }
-    }
+    const jobTypeError = bookingValidators.jobType(formData.jobType);
+    if (jobTypeError) newErrors.jobType = jobTypeError;
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!validateForm()) {
       return;
     }
 
-    // Create new booking object
-    const newBooking: Omit<Booking, "id"> = {
-      vehicleNo: formData.vehicleNo.trim(),
-      sva: formData.sva.trim(),
-      checkInDate: formData.checkInDate,
-      promisedDate: formData.promisedDate,
-      currentProcess: formData.currentProcess,
-      status: "queuing",
-      startTime: "08:00", // Default start time
-      endTime: "10:00", // Default end time
-      bayId: "", // Will be assigned later
-      priority: formData.priority,
-      flow: formData.flow.trim() || undefined,
-    };
+    setIsLoading(true);
+    setApiError("");
 
-    onAdd(newBooking);
+    try {
+      const response = await bookingAPI.createBooking({
+        carRegNo: formData.carRegNo.trim(),
+        checkinDate: formData.checkinDate,
+        promiseDate: formData.promiseDate,
+        serviceAdvisorId: formData.serviceAdvisorId,
+        bayId: formData.bayId,
+        jobType: formData.jobType,
+        status: formData.status,
+        jobStartTime: formData.jobStartTime || undefined,
+        jobEndTime: formData.jobEndTime || undefined,
+      });
+
+      if (response.success) {
+        onSuccess();
+        handleClose();
+      } else {
+        setApiError(response.message || "Failed to create booking");
+      }
+    } catch (error) {
+      setApiError("An unexpected error occurred. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleClose = () => {
+    setFormData({
+      carRegNo: "",
+      checkinDate: "",
+      promiseDate: "",
+      serviceAdvisorId: 0,
+      bayId: 0,
+      jobType: "MEDIUM",
+      status: "QUEUING",
+      jobStartTime: "",
+      jobEndTime: "",
+    });
+    setErrors({});
+    setApiError("");
+    onClose();
   };
 
   const formatDateForInput = (dateString: string) => {
@@ -142,37 +175,44 @@ const AddBookingModal: React.FC<AddBookingModalProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Registration Number */}
             <div className="space-y-2">
-              <Label htmlFor="vehicleNo">
+              <Label htmlFor="carRegNo">
                 Reg No <span className="text-red-500">*</span>
               </Label>
               <Input
-                id="vehicleNo"
+                id="carRegNo"
                 type="text"
-                value={formData.vehicleNo}
-                onChange={(e) => handleInputChange("vehicleNo", e.target.value)}
+                value={formData.carRegNo}
+                onChange={(e) => handleInputChange("carRegNo", e.target.value)}
                 placeholder="e.g. VJT3527"
-                className={errors.vehicleNo ? "border-red-500" : ""}
+                className={errors.carRegNo ? "border-red-500" : ""}
               />
-              {errors.vehicleNo && (
-                <p className="text-red-500 text-xs">{errors.vehicleNo}</p>
+              {errors.carRegNo && (
+                <p className="text-red-500 text-xs">{errors.carRegNo}</p>
               )}
             </div>
 
-            {/* SVA */}
+            {/* Service Advisor ID */}
             <div className="space-y-2">
-              <Label htmlFor="sva">
-                SVA <span className="text-red-500">*</span>
+              <Label htmlFor="serviceAdvisorId">
+                Service Advisor ID <span className="text-red-500">*</span>
               </Label>
               <Input
-                id="sva"
-                type="text"
-                value={formData.sva}
-                onChange={(e) => handleInputChange("sva", e.target.value)}
-                placeholder="e.g. Abu"
-                className={errors.sva ? "border-red-500" : ""}
+                id="serviceAdvisorId"
+                type="number"
+                value={formData.serviceAdvisorId}
+                onChange={(e) =>
+                  handleInputChange(
+                    "serviceAdvisorId",
+                    parseInt(e.target.value) || 0
+                  )
+                }
+                placeholder="e.g. 1"
+                className={errors.serviceAdvisorId ? "border-red-500" : ""}
               />
-              {errors.sva && (
-                <p className="text-red-500 text-xs">{errors.sva}</p>
+              {errors.serviceAdvisorId && (
+                <p className="text-red-500 text-xs">
+                  {errors.serviceAdvisorId}
+                </p>
               )}
             </div>
           </div>
@@ -181,119 +221,189 @@ const AddBookingModal: React.FC<AddBookingModalProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Check-in Date */}
             <div className="space-y-2">
-              <Label htmlFor="checkInDate">
+              <Label htmlFor="checkinDate">
                 Chk-in Date <span className="text-red-500">*</span>
               </Label>
               <Input
-                id="checkInDate"
+                id="checkinDate"
                 type="date"
-                value={formData.checkInDate}
+                value={formData.checkinDate}
                 onChange={(e) =>
-                  handleInputChange("checkInDate", e.target.value)
+                  handleInputChange("checkinDate", e.target.value)
                 }
-                className={errors.checkInDate ? "border-red-500" : ""}
+                className={errors.checkinDate ? "border-red-500" : ""}
               />
-              {errors.checkInDate && (
-                <p className="text-red-500 text-xs">{errors.checkInDate}</p>
+              {errors.checkinDate && (
+                <p className="text-red-500 text-xs">{errors.checkinDate}</p>
               )}
             </div>
 
-            {/* Promised Date */}
+            {/* Promise Date */}
             <div className="space-y-2">
-              <Label htmlFor="promisedDate">
+              <Label htmlFor="promiseDate">
                 Prom Date <span className="text-red-500">*</span>
               </Label>
               <Input
-                id="promisedDate"
+                id="promiseDate"
                 type="date"
-                value={formData.promisedDate}
+                value={formData.promiseDate}
                 onChange={(e) =>
-                  handleInputChange("promisedDate", e.target.value)
+                  handleInputChange("promiseDate", e.target.value)
                 }
-                className={errors.promisedDate ? "border-red-500" : ""}
+                className={errors.promiseDate ? "border-red-500" : ""}
               />
-              {errors.promisedDate && (
-                <p className="text-red-500 text-xs">{errors.promisedDate}</p>
+              {errors.promiseDate && (
+                <p className="text-red-500 text-xs">{errors.promiseDate}</p>
               )}
             </div>
           </div>
 
           {/* Third Row */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Job Start Process */}
+            {/* Bay ID */}
             <div className="space-y-2">
-              <Label htmlFor="currentProcess">
-                Job Start (Process) <span className="text-red-500">*</span>
+              <Label htmlFor="bayId">
+                Bay ID <span className="text-red-500">*</span>
               </Label>
-              <Select
-                value={formData.currentProcess}
-                onValueChange={(value) =>
-                  handleInputChange("currentProcess", value)
+              <Input
+                id="bayId"
+                type="number"
+                value={formData.bayId}
+                onChange={(e) =>
+                  handleInputChange("bayId", parseInt(e.target.value) || 0)
                 }
-              >
-                <SelectTrigger
-                  className={errors.currentProcess ? "border-red-500" : ""}
-                >
-                  <SelectValue placeholder="—" />
-                </SelectTrigger>
-                <SelectContent>
-                  {processOptions.map((process) => (
-                    <SelectItem key={process} value={process}>
-                      {process}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {errors.currentProcess && (
-                <p className="text-red-500 text-xs">{errors.currentProcess}</p>
+                placeholder="e.g. 1"
+                className={errors.bayId ? "border-red-500" : ""}
+              />
+              {errors.bayId && (
+                <p className="text-red-500 text-xs">{errors.bayId}</p>
               )}
             </div>
 
-            {/* Priority */}
+            {/* Job Type */}
             <div className="space-y-2">
-              <Label htmlFor="priority">Priority</Label>
+              <Label htmlFor="jobType">
+                Job Type <span className="text-red-500">*</span>
+              </Label>
               <Select
-                value={formData.priority}
-                onValueChange={(value) => handleInputChange("priority", value)}
+                value={formData.jobType}
+                onValueChange={(value) =>
+                  handleInputChange(
+                    "jobType",
+                    value as "LIGHT" | "MEDIUM" | "HEAVY"
+                  )
+                }
               >
-                <SelectTrigger>
+                <SelectTrigger
+                  className={errors.jobType ? "border-red-500" : ""}
+                >
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="low">Low</SelectItem>
-                  <SelectItem value="medium">Medium</SelectItem>
-                  <SelectItem value="high">High</SelectItem>
+                  <SelectItem value="LIGHT">Light</SelectItem>
+                  <SelectItem value="MEDIUM">Medium</SelectItem>
+                  <SelectItem value="HEAVY">Heavy</SelectItem>
                 </SelectContent>
               </Select>
+              {errors.jobType && (
+                <p className="text-red-500 text-xs">{errors.jobType}</p>
+              )}
             </div>
           </div>
 
-          {/* Flow (Optional) */}
-          <div className="space-y-2">
-            <Label htmlFor="flow">Flow (Optional)</Label>
-            <Input
-              id="flow"
-              type="text"
-              value={formData.flow}
-              onChange={(e) => handleInputChange("flow", e.target.value)}
-              placeholder="e.g. SP | SB | QC"
-            />
-            <p className="text-xs text-gray-500">
-              Enter the process flow separated by "|" (e.g., SP | SB | QC)
-            </p>
+          {/* Fourth Row - Optional Time Fields */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Job Start Time */}
+            <div className="space-y-2">
+              <Label htmlFor="jobStartTime">Job Start Time (Optional)</Label>
+              <Input
+                id="jobStartTime"
+                type="time"
+                value={formData.jobStartTime}
+                onChange={(e) =>
+                  handleInputChange("jobStartTime", e.target.value)
+                }
+                placeholder="08:00"
+              />
+            </div>
+
+            {/* Job End Time */}
+            <div className="space-y-2">
+              <Label htmlFor="jobEndTime">Job End Time (Optional)</Label>
+              <Input
+                id="jobEndTime"
+                type="time"
+                value={formData.jobEndTime}
+                onChange={(e) =>
+                  handleInputChange("jobEndTime", e.target.value)
+                }
+                placeholder="17:00"
+              />
+            </div>
           </div>
+
+          {/* API Error Alert */}
+          {apiError && (
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <svg
+                    className="h-5 w-5 text-red-400"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm">{apiError}</p>
+                </div>
+              </div>
+            </div>
+          )}
         </form>
 
         <DialogFooter>
-          <Button type="button" variant="outline" onClick={onClose}>
+          <Button type="button" variant="outline" onClick={handleClose}>
             Cancel
           </Button>
           <Button
             type="submit"
             form="add-booking-form"
+            disabled={isLoading}
             className="bg-toyota-red hover:bg-toyota-red-dark"
           >
-            Add Booking
+            {isLoading ? (
+              <>
+                <svg
+                  className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
+                Creating...
+              </>
+            ) : (
+              "Add Booking"
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -1,7 +1,12 @@
 "use client";
 
-import React, { useState } from "react";
-import { bookingUtils, Booking } from "@/lib/api/bookings";
+import React, { useState, useEffect } from "react";
+import {
+  bookingUtils,
+  Booking,
+  bookingAPI,
+  bookingValidators,
+} from "@/lib/api/bookings";
 import {
   Dialog,
   DialogContent,
@@ -30,69 +35,139 @@ interface Bay {
 
 interface BookingEditModalProps {
   open: boolean;
-  booking: Booking;
+  booking: Booking | null;
   onClose: () => void;
-  onUpdate: (booking: Booking) => void;
+  onSuccess: () => void;
   onViewHistory: (booking: Booking) => void;
-  processOptions: string[];
-  timeSlots: string[];
-  bays: Bay[];
 }
 
 const BookingEditModal: React.FC<BookingEditModalProps> = ({
   open,
   booking,
   onClose,
-  onUpdate,
+  onSuccess,
   onViewHistory,
-  processOptions,
-  timeSlots,
-  bays,
 }) => {
   const [formData, setFormData] = useState({
-    currentProcess: booking?.currentProcess || "",
-    startTime: booking?.startTime || "",
-    endTime: booking?.endTime || "",
-    bayId: booking?.bayId || "",
+    carRegNo: booking?.carRegNo || "",
+    checkinDate: booking?.checkinDate || "",
+    promiseDate: booking?.promiseDate || "",
+    serviceAdvisorId: booking?.serviceAdvisorId || 0,
+    bayId: booking?.bayId || 0,
+    jobType: booking?.jobType || "MEDIUM",
+    status: booking?.status || "QUEUING",
+    jobStartTime: booking?.jobStartTime || "",
+    jobEndTime: booking?.jobEndTime || "",
   });
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isLoading, setIsLoading] = useState(false);
+  const [apiError, setApiError] = useState("");
+
+  // Update form data when booking changes
+  useEffect(() => {
+    if (booking) {
+      setFormData({
+        carRegNo: booking.carRegNo,
+        checkinDate: booking.checkinDate,
+        promiseDate: booking.promiseDate,
+        serviceAdvisorId: booking.serviceAdvisorId,
+        bayId: booking.bayId,
+        jobType: booking.jobType,
+        status: booking.status,
+        jobStartTime: booking.jobStartTime || "",
+        jobEndTime: booking.jobEndTime || "",
+      });
+    }
+  }, [booking]);
 
   // Don't render if booking is null
   if (!booking) {
     return null;
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+
+    const carRegNoError = bookingValidators.carRegNo(formData.carRegNo);
+    if (carRegNoError) newErrors.carRegNo = carRegNoError;
+
+    const checkinDateError = bookingValidators.checkinDate(
+      formData.checkinDate
+    );
+    if (checkinDateError) newErrors.checkinDate = checkinDateError;
+
+    const promiseDateError = bookingValidators.promiseDate(
+      formData.promiseDate,
+      formData.checkinDate
+    );
+    if (promiseDateError) newErrors.promiseDate = promiseDateError;
+
+    const serviceAdvisorIdError = bookingValidators.serviceAdvisorId(
+      formData.serviceAdvisorId
+    );
+    if (serviceAdvisorIdError)
+      newErrors.serviceAdvisorId = serviceAdvisorIdError;
+
+    const bayIdError = bookingValidators.bayId(formData.bayId);
+    if (bayIdError) newErrors.bayId = bayIdError;
+
+    const jobTypeError = bookingValidators.jobType(formData.jobType);
+    if (jobTypeError) newErrors.jobType = jobTypeError;
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Calculate duration to maintain the same booking length
-    const startIndex = timeSlots.indexOf(booking.startTime);
-    const endIndex = timeSlots.indexOf(booking.endTime);
-    const duration = endIndex - startIndex;
+    if (!validateForm()) {
+      return;
+    }
 
-    const newStartIndex = timeSlots.indexOf(formData.startTime);
-    const newEndIndex = newStartIndex + duration;
-    const newEndTime =
-      timeSlots[newEndIndex] || timeSlots[timeSlots.length - 1];
+    setIsLoading(true);
+    setApiError("");
 
-    const updatedBooking: Booking = {
-      ...booking,
-      currentProcess: formData.currentProcess,
-      startTime: formData.startTime,
-      endTime: newEndTime,
-      bayId: formData.bayId,
-    };
+    try {
+      const response = await bookingAPI.updateBooking(booking.id, {
+        carRegNo: formData.carRegNo.trim(),
+        checkinDate: formData.checkinDate,
+        promiseDate: formData.promiseDate,
+        serviceAdvisorId: formData.serviceAdvisorId,
+        bayId: formData.bayId,
+        jobType: formData.jobType,
+        status: formData.status,
+        jobStartTime: formData.jobStartTime || undefined,
+        jobEndTime: formData.jobEndTime || undefined,
+      });
 
-    onUpdate(updatedBooking);
+      if (response.success) {
+        onSuccess();
+        handleClose();
+      } else {
+        setApiError(response.message || "Failed to update booking");
+      }
+    } catch (error) {
+      setApiError("An unexpected error occurred. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleInputChange = (field: string, value: string) => {
+  const handleClose = () => {
+    setErrors({});
+    setApiError("");
+    onClose();
+  };
+
+  const handleInputChange = (field: string, value: string | number) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
+    // Clear error when user starts typing
+    if (errors[field]) {
+      setErrors((prev) => ({ ...prev, [field]: "" }));
+    }
+    if (apiError) setApiError("");
   };
-
-  // Get available bays for the selected process
-  const availableBays = bays.filter(
-    (bay) => bay.process === formData.currentProcess
-  );
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -100,7 +175,7 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
         <DialogHeader>
           <DialogTitle>Edit Booking</DialogTitle>
           <DialogDescription>
-            Update booking details and workflow actions for {booking.vehicleNo}.
+            Update booking details and workflow actions for {booking.carRegNo}.
           </DialogDescription>
         </DialogHeader>
         {/* Booking Info */}
@@ -110,18 +185,27 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
           </h4>
           <div className="space-y-1 text-sm">
             <div>
-              <span className="font-medium">Vehicle:</span> {booking.vehicleNo}
+              <span className="font-medium">Vehicle:</span> {booking.carRegNo}
             </div>
             <div>
-              <span className="font-medium">SVA:</span> {booking.sva}
+              <span className="font-medium">Service Advisor ID:</span>{" "}
+              {booking.serviceAdvisorId}
             </div>
             <div>
               <span className="font-medium">Check-in:</span>{" "}
-              {booking.checkInDate}
+              {new Date(booking.checkinDate).toLocaleDateString()}
             </div>
             <div>
-              <span className="font-medium">Promised:</span>{" "}
-              {booking.promisedDate}
+              <span className="font-medium">Promise:</span>{" "}
+              {new Date(booking.promiseDate).toLocaleDateString()}
+            </div>
+            <div>
+              <span className="font-medium">Job Type:</span>{" "}
+              {bookingUtils.getJobTypeText(booking.jobType)}
+            </div>
+            <div>
+              <span className="font-medium">Status:</span>{" "}
+              {bookingUtils.getStatusText(booking.status)}
             </div>
           </div>
         </div>
@@ -131,87 +215,217 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
           onSubmit={handleSubmit}
           className="space-y-4"
         >
-          {/* Process Selection */}
-          <div className="space-y-2">
-            <Label htmlFor="currentProcess">Current Process</Label>
-            <Select
-              value={formData.currentProcess}
-              onValueChange={(value) =>
-                handleInputChange("currentProcess", value)
-              }
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {processOptions.map((process) => (
-                  <SelectItem key={process} value={process}>
-                    {process}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {/* API Error Alert */}
+          {apiError && (
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <svg
+                    className="h-5 w-5 text-red-400"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm">{apiError}</p>
+                </div>
+              </div>
+            </div>
+          )}
 
-          {/* Bay Selection */}
-          <div className="space-y-2">
-            <Label htmlFor="bayId">Bay Assignment</Label>
-            <Select
-              value={formData.bayId}
-              onValueChange={(value) => handleInputChange("bayId", value)}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {availableBays.map((bay) => (
-                  <SelectItem key={bay.id} value={bay.id}>
-                    {bay.name} - {bay.process}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {/* Form Fields */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Car Registration Number */}
+            <div className="space-y-2">
+              <Label htmlFor="carRegNo">
+                Car Registration Number <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="carRegNo"
+                type="text"
+                value={formData.carRegNo}
+                onChange={(e) => handleInputChange("carRegNo", e.target.value)}
+                className={errors.carRegNo ? "border-red-500" : ""}
+              />
+              {errors.carRegNo && (
+                <p className="text-red-500 text-xs">{errors.carRegNo}</p>
+              )}
+            </div>
 
-          {/* Start Time */}
-          <div className="space-y-2">
-            <Label htmlFor="startTime">Start Time</Label>
-            <Select
-              value={formData.startTime}
-              onValueChange={(value) => handleInputChange("startTime", value)}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {timeSlots.map((time) => (
-                  <SelectItem key={time} value={time}>
-                    {time}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+            {/* Service Advisor ID */}
+            <div className="space-y-2">
+              <Label htmlFor="serviceAdvisorId">
+                Service Advisor ID <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="serviceAdvisorId"
+                type="number"
+                value={formData.serviceAdvisorId}
+                onChange={(e) =>
+                  handleInputChange(
+                    "serviceAdvisorId",
+                    parseInt(e.target.value) || 0
+                  )
+                }
+                className={errors.serviceAdvisorId ? "border-red-500" : ""}
+              />
+              {errors.serviceAdvisorId && (
+                <p className="text-red-500 text-xs">
+                  {errors.serviceAdvisorId}
+                </p>
+              )}
+            </div>
 
-          {/* End Time (calculated automatically) */}
-          <div className="space-y-2">
-            <Label htmlFor="endTime">End Time (Auto-calculated)</Label>
-            <Input
-              id="endTime"
-              type="text"
-              value={(() => {
-                const startIndex = timeSlots.indexOf(booking.startTime);
-                const endIndex = timeSlots.indexOf(booking.endTime);
-                const duration = endIndex - startIndex;
-                const newStartIndex = timeSlots.indexOf(formData.startTime);
-                const newEndIndex = newStartIndex + duration;
-                return (
-                  timeSlots[newEndIndex] || timeSlots[timeSlots.length - 1]
-                );
-              })()}
-              disabled
-              className="bg-gray-100 text-gray-600"
-            />
+            {/* Check-in Date */}
+            <div className="space-y-2">
+              <Label htmlFor="checkinDate">
+                Check-in Date <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="checkinDate"
+                type="date"
+                value={formData.checkinDate}
+                onChange={(e) =>
+                  handleInputChange("checkinDate", e.target.value)
+                }
+                className={errors.checkinDate ? "border-red-500" : ""}
+              />
+              {errors.checkinDate && (
+                <p className="text-red-500 text-xs">{errors.checkinDate}</p>
+              )}
+            </div>
+
+            {/* Promise Date */}
+            <div className="space-y-2">
+              <Label htmlFor="promiseDate">
+                Promise Date <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="promiseDate"
+                type="date"
+                value={formData.promiseDate}
+                onChange={(e) =>
+                  handleInputChange("promiseDate", e.target.value)
+                }
+                className={errors.promiseDate ? "border-red-500" : ""}
+              />
+              {errors.promiseDate && (
+                <p className="text-red-500 text-xs">{errors.promiseDate}</p>
+              )}
+            </div>
+
+            {/* Bay ID */}
+            <div className="space-y-2">
+              <Label htmlFor="bayId">
+                Bay ID <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="bayId"
+                type="number"
+                value={formData.bayId}
+                onChange={(e) =>
+                  handleInputChange("bayId", parseInt(e.target.value) || 0)
+                }
+                className={errors.bayId ? "border-red-500" : ""}
+              />
+              {errors.bayId && (
+                <p className="text-red-500 text-xs">{errors.bayId}</p>
+              )}
+            </div>
+
+            {/* Job Type */}
+            <div className="space-y-2">
+              <Label htmlFor="jobType">
+                Job Type <span className="text-red-500">*</span>
+              </Label>
+              <Select
+                value={formData.jobType}
+                onValueChange={(value) =>
+                  handleInputChange(
+                    "jobType",
+                    value as "LIGHT" | "MEDIUM" | "HEAVY"
+                  )
+                }
+              >
+                <SelectTrigger
+                  className={errors.jobType ? "border-red-500" : ""}
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="LIGHT">Light</SelectItem>
+                  <SelectItem value="MEDIUM">Medium</SelectItem>
+                  <SelectItem value="HEAVY">Heavy</SelectItem>
+                </SelectContent>
+              </Select>
+              {errors.jobType && (
+                <p className="text-red-500 text-xs">{errors.jobType}</p>
+              )}
+            </div>
+
+            {/* Status */}
+            <div className="space-y-2">
+              <Label htmlFor="status">
+                Status <span className="text-red-500">*</span>
+              </Label>
+              <Select
+                value={formData.status}
+                onValueChange={(value) =>
+                  handleInputChange("status", value as any)
+                }
+              >
+                <SelectTrigger
+                  className={errors.status ? "border-red-500" : ""}
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="QUEUING">Queuing</SelectItem>
+                  <SelectItem value="BAY_QUEUE">Bay Queue</SelectItem>
+                  <SelectItem value="NEXT_JOB">Next Job</SelectItem>
+                  <SelectItem value="ACTIVE_BOARD">Active Board</SelectItem>
+                  <SelectItem value="JOB_STOPPAGE">Job Stoppage</SelectItem>
+                  <SelectItem value="REPAIR_COMPLETION">
+                    Repair Completion
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              {errors.status && (
+                <p className="text-red-500 text-xs">{errors.status}</p>
+              )}
+            </div>
+
+            {/* Job Start Time */}
+            <div className="space-y-2">
+              <Label htmlFor="jobStartTime">Job Start Time (Optional)</Label>
+              <Input
+                id="jobStartTime"
+                type="time"
+                value={formData.jobStartTime}
+                onChange={(e) =>
+                  handleInputChange("jobStartTime", e.target.value)
+                }
+              />
+            </div>
+
+            {/* Job End Time */}
+            <div className="space-y-2">
+              <Label htmlFor="jobEndTime">Job End Time (Optional)</Label>
+              <Input
+                id="jobEndTime"
+                type="time"
+                value={formData.jobEndTime}
+                onChange={(e) =>
+                  handleInputChange("jobEndTime", e.target.value)
+                }
+              />
+            </div>
           </div>
 
           {/* Workflow Actions */}
@@ -272,15 +486,42 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
         </form>
 
         <DialogFooter>
-          <Button type="button" variant="outline" onClick={onClose}>
+          <Button type="button" variant="outline" onClick={handleClose}>
             Cancel
           </Button>
           <Button
             type="submit"
             form="edit-booking-form"
+            disabled={isLoading}
             className="bg-toyota-red hover:bg-toyota-red-dark"
           >
-            Update Booking
+            {isLoading ? (
+              <>
+                <svg
+                  className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
+                Updating...
+              </>
+            ) : (
+              "Update Booking"
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>

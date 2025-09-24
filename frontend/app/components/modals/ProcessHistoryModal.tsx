@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 
 interface ProcessHistoryModalProps {
   open: boolean;
-  booking: Booking;
+  booking: Booking | null;
   onClose: () => void;
 }
 
@@ -28,20 +28,19 @@ const ProcessHistoryModal: React.FC<ProcessHistoryModalProps> = ({
 
   useEffect(() => {
     const fetchProcessHistory = async () => {
+      if (!booking?.id) return;
+
       try {
-        const response = await bookingAPI.processTracking.getProcessHistory(
-          booking.id
-        );
+        const response = await bookingAPI.getBookingHistory(booking.id);
         if (response.success && response.data) {
           setProcessHistory(response.data);
         } else {
-          // Use mock data for demonstration
-          setProcessHistory(getMockProcessHistory(booking.id));
+          console.error("Failed to fetch process history:", response.message);
+          setProcessHistory([]);
         }
       } catch (error) {
         console.error("Failed to fetch process history:", error);
-        // Use mock data when API fails
-        setProcessHistory(getMockProcessHistory(booking.id));
+        setProcessHistory([]);
       } finally {
         setIsLoading(false);
       }
@@ -51,77 +50,6 @@ const ProcessHistoryModal: React.FC<ProcessHistoryModalProps> = ({
       fetchProcessHistory();
     }
   }, [booking?.id]);
-
-  // Mock data generator for demonstration
-  const getMockProcessHistory = (bookingId: string): ProcessStep[] => {
-    const now = new Date();
-    const mockSteps: ProcessStep[] = [
-      {
-        id: "step-1",
-        bookingId: bookingId,
-        processName: "Check-in",
-        status: "completed",
-        startTime: new Date(now.getTime() - 2 * 60 * 60 * 1000).toISOString(), // 2 hours ago
-        endTime: new Date(now.getTime() - 1.5 * 60 * 60 * 1000).toISOString(), // 1.5 hours ago
-        notes: "Vehicle checked in and initial inspection completed",
-        bayId: "Bay 1",
-        technicianId: "tech-001",
-        createdAt: new Date(now.getTime() - 2 * 60 * 60 * 1000).toISOString(),
-        updatedAt: new Date(now.getTime() - 1.5 * 60 * 60 * 1000).toISOString(),
-      },
-      {
-        id: "step-2",
-        bookingId: bookingId,
-        processName: "Surface Preparation",
-        status: "completed",
-        startTime: new Date(now.getTime() - 1.5 * 60 * 60 * 1000).toISOString(), // 1.5 hours ago
-        endTime: new Date(now.getTime() - 1 * 60 * 60 * 1000).toISOString(), // 1 hour ago
-        notes: "Surface cleaned and prepared for painting",
-        bayId: "Bay 4",
-        technicianId: "tech-002",
-        createdAt: new Date(now.getTime() - 1.5 * 60 * 60 * 1000).toISOString(),
-        updatedAt: new Date(now.getTime() - 1 * 60 * 60 * 1000).toISOString(),
-      },
-      {
-        id: "step-3",
-        bookingId: bookingId,
-        processName: "Spray Booth",
-        status: "started",
-        startTime: new Date(now.getTime() - 1 * 60 * 60 * 1000).toISOString(), // 1 hour ago
-        notes: "Currently in spray booth for painting process",
-        bayId: "Bay 5",
-        technicianId: "tech-003",
-        createdAt: new Date(now.getTime() - 1 * 60 * 60 * 1000).toISOString(),
-        updatedAt: new Date(now.getTime() - 1 * 60 * 60 * 1000).toISOString(),
-      },
-      {
-        id: "step-4",
-        bookingId: bookingId,
-        processName: "Quality Control",
-        status: "paused",
-        startTime: new Date(now.getTime() - 30 * 60 * 1000).toISOString(), // 30 minutes ago
-        notes: "Quality check paused due to material shortage",
-        bayId: "Bay 6",
-        technicianId: "tech-004",
-        createdAt: new Date(now.getTime() - 30 * 60 * 1000).toISOString(),
-        updatedAt: new Date(now.getTime() - 15 * 60 * 1000).toISOString(),
-      },
-      {
-        id: "step-5",
-        bookingId: bookingId,
-        processName: "Final Inspection",
-        status: "paused",
-        startTime: new Date(now.getTime() - 10 * 60 * 1000).toISOString(), // 10 minutes ago
-        notes: "Waiting for quality control completion",
-        bayId: "Bay 7",
-        technicianId: "tech-005",
-        createdAt: new Date(now.getTime() - 10 * 60 * 1000).toISOString(),
-        updatedAt: new Date(now.getTime() - 5 * 60 * 1000).toISOString(),
-      },
-    ];
-
-    return mockSteps;
-  };
 
   // Don't render if booking is null
   if (!booking) {
@@ -134,7 +62,8 @@ const ProcessHistoryModal: React.FC<ProcessHistoryModalProps> = ({
         <DialogHeader>
           <DialogTitle>Process History</DialogTitle>
           <DialogDescription>
-            Vehicle: {booking.vehicleNo} | SVA: {booking.sva}
+            Vehicle: {booking.carRegNo} | Service Advisor ID:{" "}
+            {booking.serviceAdvisorId}
           </DialogDescription>
           <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-lg">
             <div className="flex items-center space-x-2">
@@ -186,54 +115,46 @@ const ProcessHistoryModal: React.FC<ProcessHistoryModalProps> = ({
                         }`}
                       ></div>
                       <span className="font-medium text-toyota-black">
-                        {step.processName}
+                        {step.fromStatus} → {step.toStatus}
                       </span>
                     </div>
-                    <span
-                      className={`text-xs px-2 py-1 rounded-full ${
-                        step.status === "completed"
-                          ? "bg-green-100 text-green-800"
-                          : step.status === "started"
-                          ? "bg-blue-100 text-blue-800"
-                          : "bg-yellow-100 text-yellow-800"
-                      }`}
-                    >
-                      {step.status}
+                    <span className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-800">
+                      Status Change
                     </span>
                   </div>
                   <div className="text-sm text-gray-600 space-y-1">
                     <div className="flex justify-between">
-                      <span>Start:</span>
+                      <span>Changed At:</span>
                       <span className="font-medium">
-                        {new Date(step.startTime).toLocaleString()}
+                        {new Date(step.changedAt).toLocaleString()}
                       </span>
                     </div>
-                    {step.endTime && (
+                    {step.jobStartTime && (
                       <div className="flex justify-between">
-                        <span>End:</span>
+                        <span>Job Start:</span>
+                        <span className="font-medium">{step.jobStartTime}</span>
+                      </div>
+                    )}
+                    {step.jobEndTime && (
+                      <div className="flex justify-between">
+                        <span>Job End:</span>
+                        <span className="font-medium">{step.jobEndTime}</span>
+                      </div>
+                    )}
+                    {step.fromProcess && (
+                      <div className="flex justify-between">
+                        <span>From Process:</span>
                         <span className="font-medium">
-                          {new Date(step.endTime).toLocaleString()}
+                          {step.fromProcess.name}
                         </span>
                       </div>
                     )}
-                    {step.bayId && (
+                    {step.toProcess && (
                       <div className="flex justify-between">
-                        <span>Bay:</span>
-                        <span className="font-medium">{step.bayId}</span>
-                      </div>
-                    )}
-                    {step.technicianId && (
-                      <div className="flex justify-between">
-                        <span>Technician:</span>
-                        <span className="font-medium">{step.technicianId}</span>
-                      </div>
-                    )}
-                    {step.notes && (
-                      <div className="mt-2 pt-2 border-t border-gray-100">
-                        <div className="text-xs text-gray-500 mb-1">Notes:</div>
-                        <div className="text-sm text-gray-700 italic">
-                          {step.notes}
-                        </div>
+                        <span>To Process:</span>
+                        <span className="font-medium">
+                          {step.toProcess.name}
+                        </span>
                       </div>
                     )}
                   </div>

@@ -99,197 +99,28 @@ const BookingDashboard: React.FC = () => {
     },
   ];
 
-  // Mock bookings data
+  // Fetch bookings data from API
   useEffect(() => {
-    const mockBookings: Booking[] = [
-      // Queuing bookings
-      {
-        id: "booking-1",
-        vehicleNo: "BGC543",
-        sva: "Abu",
-        checkInDate: "05-Sep",
-        promisedDate: "26-Sep",
-        currentProcess: "Surface Preparation",
-        status: "queuing",
-        startTime: "08:00",
-        endTime: "10:30",
-        bayId: "bay-4",
-        priority: "high",
-      },
-      // Bay Queue bookings
-      {
-        id: "booking-2",
-        vehicleNo: "fgh4536",
-        sva: "Abu",
-        checkInDate: "04-Sep",
-        promisedDate: "18-Sep",
-        currentProcess: "Panel Beating",
-        status: "bay_queue",
-        startTime: "10:30",
-        endTime: "11:30",
-        bayId: "bay-1",
-        priority: "medium",
-      },
-      {
-        id: "booking-3",
-        vehicleNo: "hjdoik",
-        sva: "Abu",
-        checkInDate: "10-Sep",
-        promisedDate: "17-Sep",
-        currentProcess: "Panel Beating",
-        status: "bay_queue",
-        startTime: "09:00",
-        endTime: "12:00",
-        bayId: "bay-1",
-        priority: "high",
-      },
-      {
-        id: "booking-4",
-        vehicleNo: "CVB543",
-        sva: "ABU",
-        checkInDate: "06-Sep",
-        promisedDate: "15-Sep",
-        flow: "A/D | PB | PL",
-        currentProcess: "Polishing",
-        status: "bay_queue",
-        startTime: "11:00",
-        endTime: "13:00",
-        bayId: "bay-6",
-        priority: "low",
-      },
-      {
-        id: "booking-5",
-        vehicleNo: "VJT543",
-        sva: "Abu",
-        checkInDate: "18-Sep",
-        promisedDate: "25-Sep",
-        currentProcess: "Surface Preparation",
-        status: "bay_queue",
-        startTime: "13:00",
-        endTime: "16:00",
-        bayId: "bay-4",
-        priority: "high",
-      },
-      // Next Job
-      {
-        id: "booking-6",
-        vehicleNo: "VJT6591",
-        sva: "Abu",
-        checkInDate: "05-Sep",
-        promisedDate: "19-Sep",
-        currentProcess: "Surface Preparation",
-        status: "next_job",
-        startTime: "14:00",
-        endTime: "16:30",
-        bayId: "bay-4",
-        priority: "medium",
-      },
-      // Active bookings in timeline
-      {
-        id: "booking-7",
-        vehicleNo: "PKJ1234",
-        sva: "Test",
-        checkInDate: "10-Sep",
-        promisedDate: "10-Sep",
-        flow: "SP | SB",
-        currentProcess: "Spray Booth",
-        status: "active",
-        startTime: "12:00",
-        endTime: "13:30",
-        bayId: "bay-5",
-        priority: "high",
-      },
-      {
-        id: "booking-8",
-        vehicleNo: "fgh789",
-        sva: "Ali",
-        checkInDate: "03-Sep",
-        promisedDate: "10-Sep",
-        flow: "SB | A/D",
-        currentProcess: "Assembly/Disassembly",
-        status: "active",
-        startTime: "08:00",
-        endTime: "10:45",
-        bayId: "bay-7",
-        priority: "high",
-      },
-      {
-        id: "booking-9",
-        vehicleNo: "FVC432",
-        sva: "Abu",
-        checkInDate: "05-Sep",
-        promisedDate: "19-Sep",
-        flow: "PL | A/D | WS",
-        currentProcess: "Windscreen",
-        status: "active",
-        startTime: "11:45",
-        endTime: "14:15",
-        bayId: "bay-8",
-        priority: "high",
-      },
-      // Completed bookings
-      {
-        id: "booking-10",
-        vehicleNo: "vjt3456",
-        sva: "Abu",
-        checkInDate: "05-Sep",
-        promisedDate: "12-Sep",
-        currentProcess: "Surface Preparation",
-        status: "completed",
-        startTime: "08:00",
-        endTime: "10:00",
-        bayId: "bay-4",
-        priority: "medium",
-      },
-      {
-        id: "booking-11",
-        vehicleNo: "hisn",
-        sva: "Abu",
-        checkInDate: "11-Sep",
-        promisedDate: "18-Sep",
-        currentProcess: "Spray Booth",
-        status: "completed",
-        startTime: "10:00",
-        endTime: "12:00",
-        bayId: "bay-5",
-        priority: "medium",
-      },
-      {
-        id: "booking-12",
-        vehicleNo: "fgh5678",
-        sva: "Ali",
-        checkInDate: "03-Sep",
-        promisedDate: "17-Sep",
-        flow: "A/D | PL",
-        currentProcess: "Polishing",
-        status: "completed",
-        startTime: "14:00",
-        endTime: "16:00",
-        bayId: "bay-6",
-        priority: "medium",
-      },
-      {
-        id: "booking-13",
-        vehicleNo: "vjt6591",
-        sva: "Abu",
-        checkInDate: "05-Sep",
-        promisedDate: "19-Sep",
-        currentProcess: "Assembly/Disassembly",
-        status: "completed",
-        startTime: "16:00",
-        endTime: "18:00",
-        bayId: "bay-7",
-        priority: "high",
-      },
-    ];
-    setBookings(mockBookings);
+    const fetchBookings = async () => {
+      try {
+        const response = await bookingAPI.getBookings();
+        if (response.success && response.data) {
+          setBookings(response.data);
+        } else {
+          console.error("Failed to fetch bookings:", response.message);
+        }
+      } catch (error) {
+        console.error("Error fetching bookings:", error);
+      }
+    };
+
+    fetchBookings();
   }, []);
 
-  // Workflow functions with process tracking
+  // Workflow functions
   const handleStatusTransition = async (booking: Booking, action: string) => {
     try {
       let response;
-      let processStepData = null;
 
       switch (action) {
         case "Assign to Bay":
@@ -297,78 +128,28 @@ const BookingDashboard: React.FC = () => {
             booking.id,
             booking.bayId
           );
-          // Track process step
-          processStepData = {
-            processName: booking.currentProcess,
-            status: "started" as const,
-            startTime: new Date().toISOString(),
-            bayId: booking.bayId,
-            notes: "Assigned to bay",
-          };
           break;
         case "Move to Next Job":
-          response = await bookingAPI.workflow.moveToNextJob(
-            booking.id,
-            booking.currentProcess
-          );
-          // Track process step
-          processStepData = {
-            processName: booking.currentProcess,
-            status: "started" as const,
-            startTime: new Date().toISOString(),
-            notes: "Moved to next job queue",
-          };
+          response = await bookingAPI.workflow.moveToNextJob(booking.id);
           break;
         case "Start Job":
           response = await bookingAPI.workflow.startJob(
             booking.id,
-            booking.startTime,
-            booking.endTime
+            booking.jobStartTime || new Date().toISOString().split("T")[1],
+            booking.jobEndTime ||
+              new Date(Date.now() + 2 * 60 * 60 * 1000)
+                .toISOString()
+                .split("T")[1]
           );
-          // Track process step
-          processStepData = {
-            processName: booking.currentProcess,
-            status: "started" as const,
-            startTime: booking.startTime,
-            endTime: booking.endTime,
-            bayId: booking.bayId,
-            notes: "Job started",
-          };
           break;
         case "Pause Job":
           response = await bookingAPI.workflow.pauseJob(booking.id);
-          // Track process step
-          processStepData = {
-            processName: booking.currentProcess,
-            status: "paused" as const,
-            startTime: booking.startTime,
-            endTime: new Date().toISOString(),
-            bayId: booking.bayId,
-            notes: "Job paused",
-          };
           break;
         case "Resume Job":
           response = await bookingAPI.workflow.resumeJob(booking.id);
-          // Track process step
-          processStepData = {
-            processName: booking.currentProcess,
-            status: "started" as const,
-            startTime: new Date().toISOString(),
-            bayId: booking.bayId,
-            notes: "Job resumed",
-          };
           break;
         case "Complete Job":
           response = await bookingAPI.workflow.completeJob(booking.id);
-          // Track process step
-          processStepData = {
-            processName: booking.currentProcess,
-            status: "completed" as const,
-            startTime: booking.startTime,
-            endTime: new Date().toISOString(),
-            bayId: booking.bayId,
-            notes: "Job completed",
-          };
           break;
         default:
           return;
@@ -378,18 +159,6 @@ const BookingDashboard: React.FC = () => {
         setBookings((prevBookings) =>
           prevBookings.map((b) => (b.id === booking.id ? response.data! : b))
         );
-
-        // Add process step to history
-        if (processStepData) {
-          try {
-            await bookingAPI.processTracking.addProcessStep(
-              booking.id,
-              processStepData
-            );
-          } catch (error) {
-            console.error("Failed to add process step:", error);
-          }
-        }
       }
     } catch (error) {
       console.error("Failed to update booking status:", error);
@@ -397,8 +166,10 @@ const BookingDashboard: React.FC = () => {
   };
 
   const getBookingPosition = (booking: Booking) => {
-    const startIndex = timeSlots.indexOf(booking.startTime);
-    const endIndex = timeSlots.indexOf(booking.endTime);
+    const startTime = booking.jobStartTime || "08:00";
+    const endTime = booking.jobEndTime || "10:00";
+    const startIndex = timeSlots.indexOf(startTime);
+    const endIndex = timeSlots.indexOf(endTime);
     const duration = endIndex - startIndex;
 
     const left = startIndex * 80; // 80px per time slot (w-20 = 80px)
@@ -407,7 +178,7 @@ const BookingDashboard: React.FC = () => {
     return { left, width };
   };
 
-  const getBookingsForBay = (bayId: string) => {
+  const getBookingsForBay = (bayId: number) => {
     return bookings.filter((booking) => booking.bayId === bayId);
   };
 
@@ -450,7 +221,7 @@ const BookingDashboard: React.FC = () => {
       // Generate a unique ID for the new booking
       const newBooking: Booking = {
         ...newBookingData,
-        id: `booking-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        id: Date.now(),
       };
 
       // Add to local state (in a real app, this would be an API call)
@@ -543,7 +314,7 @@ const BookingDashboard: React.FC = () => {
                 Active
               </div>
               <div className="text-3xl font-bold text-green-600 mt-1">
-                {bookings.filter((b) => b.status === "active").length}
+                {bookings.filter((b) => b.status === "ACTIVE_BOARD").length}
               </div>
             </div>
             <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
@@ -558,7 +329,7 @@ const BookingDashboard: React.FC = () => {
                 Queuing
               </div>
               <div className="text-3xl font-bold text-yellow-600 mt-1">
-                {bookings.filter((b) => b.status === "queuing").length}
+                {bookings.filter((b) => b.status === "QUEUING").length}
               </div>
             </div>
             <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
@@ -573,7 +344,7 @@ const BookingDashboard: React.FC = () => {
                 Stoppages
               </div>
               <div className="text-3xl font-bold text-red-600 mt-1">
-                {bookings.filter((b) => b.status === "stoppage").length}
+                {bookings.filter((b) => b.status === "JOB_STOPPAGE").length}
               </div>
             </div>
             <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
@@ -663,7 +434,7 @@ const BookingDashboard: React.FC = () => {
           <div className="col-span-1 p-4 border-r-2 border-gray-300 bg-yellow-50">
             <div className="space-y-2">
               {bookings
-                .filter((b) => b.status === "queuing")
+                .filter((b) => b.status === "QUEUING")
                 .map((booking) => (
                   <div
                     key={booking.id}
@@ -673,14 +444,17 @@ const BookingDashboard: React.FC = () => {
                     onClick={() => openModal(booking)}
                   >
                     <div className="text-xs font-bold truncate">
-                      {booking.vehicleNo}
+                      {booking.carRegNo}
                     </div>
-                    <div className="text-xs truncate">SVA: {booking.sva}</div>
                     <div className="text-xs truncate">
-                      {booking.checkInDate} → {booking.promisedDate}
+                      SVA: {booking.serviceAdvisorId}
+                    </div>
+                    <div className="text-xs truncate">
+                      {new Date(booking.checkinDate).toLocaleDateString()} →{" "}
+                      {new Date(booking.promiseDate).toLocaleDateString()}
                     </div>
                     <div className="text-xs font-medium truncate">
-                      {booking.currentProcess}
+                      {bookingUtils.getJobTypeText(booking.jobType)}
                     </div>
                   </div>
                 ))}
@@ -691,7 +465,7 @@ const BookingDashboard: React.FC = () => {
           <div className="col-span-1 p-4 border-r-2 border-gray-300 bg-blue-50">
             <div className="space-y-2">
               {bookings
-                .filter((b) => b.status === "bay_queue")
+                .filter((b) => b.status === "BAY_QUEUE")
                 .map((booking) => (
                   <div
                     key={booking.id}
@@ -701,14 +475,17 @@ const BookingDashboard: React.FC = () => {
                     onClick={() => openModal(booking)}
                   >
                     <div className="text-xs font-bold truncate">
-                      {booking.vehicleNo}
+                      {booking.carRegNo}
                     </div>
-                    <div className="text-xs truncate">SVA: {booking.sva}</div>
                     <div className="text-xs truncate">
-                      {booking.checkInDate} → {booking.promisedDate}
+                      SVA: {booking.serviceAdvisorId}
+                    </div>
+                    <div className="text-xs truncate">
+                      {new Date(booking.checkinDate).toLocaleDateString()} →{" "}
+                      {new Date(booking.promiseDate).toLocaleDateString()}
                     </div>
                     <div className="text-xs font-medium truncate">
-                      {booking.currentProcess}
+                      {bookingUtils.getJobTypeText(booking.jobType)}
                     </div>
                   </div>
                 ))}
@@ -719,7 +496,7 @@ const BookingDashboard: React.FC = () => {
           <div className="col-span-1 p-4 border-r-2 border-gray-300 bg-purple-50">
             <div className="space-y-2">
               {bookings
-                .filter((b) => b.status === "next_job")
+                .filter((b) => b.status === "NEXT_JOB")
                 .map((booking) => (
                   <div
                     key={booking.id}
@@ -729,14 +506,17 @@ const BookingDashboard: React.FC = () => {
                     onClick={() => openModal(booking)}
                   >
                     <div className="text-xs font-bold truncate">
-                      {booking.vehicleNo}
+                      {booking.carRegNo}
                     </div>
-                    <div className="text-xs truncate">SVA: {booking.sva}</div>
                     <div className="text-xs truncate">
-                      {booking.checkInDate} → {booking.promisedDate}
+                      SVA: {booking.serviceAdvisorId}
+                    </div>
+                    <div className="text-xs truncate">
+                      {new Date(booking.checkinDate).toLocaleDateString()} →{" "}
+                      {new Date(booking.promiseDate).toLocaleDateString()}
                     </div>
                     <div className="text-xs font-medium truncate">
-                      {booking.currentProcess}
+                      {bookingUtils.getJobTypeText(booking.jobType)}
                     </div>
                   </div>
                 ))}
@@ -784,7 +564,7 @@ const BookingDashboard: React.FC = () => {
           <div className="col-span-1 p-4 border-r-2 border-gray-300 bg-red-50">
             <div className="space-y-2">
               {bookings
-                .filter((b) => b.status === "stoppage")
+                .filter((b) => b.status === "JOB_STOPPAGE")
                 .map((booking) => (
                   <div
                     key={booking.id}
@@ -794,14 +574,17 @@ const BookingDashboard: React.FC = () => {
                     onClick={() => openModal(booking)}
                   >
                     <div className="text-xs font-bold truncate">
-                      {booking.vehicleNo}
+                      {booking.carRegNo}
                     </div>
-                    <div className="text-xs truncate">SVA: {booking.sva}</div>
                     <div className="text-xs truncate">
-                      {booking.checkInDate} → {booking.promisedDate}
+                      SVA: {booking.serviceAdvisorId}
+                    </div>
+                    <div className="text-xs truncate">
+                      {new Date(booking.checkinDate).toLocaleDateString()} →{" "}
+                      {new Date(booking.promiseDate).toLocaleDateString()}
                     </div>
                     <div className="text-xs font-medium truncate">
-                      {booking.currentProcess}
+                      {bookingUtils.getJobTypeText(booking.jobType)}
                     </div>
                   </div>
                 ))}
@@ -812,7 +595,7 @@ const BookingDashboard: React.FC = () => {
           <div className="col-span-1 p-4 border-r-2 border-gray-300 bg-green-50">
             <div className="space-y-2">
               {bookings
-                .filter((b) => b.status === "completed")
+                .filter((b) => b.status === "REPAIR_COMPLETION")
                 .map((booking) => (
                   <div
                     key={booking.id}
@@ -822,14 +605,17 @@ const BookingDashboard: React.FC = () => {
                     onClick={() => openModal(booking)}
                   >
                     <div className="text-xs font-bold truncate">
-                      {booking.vehicleNo}
+                      {booking.carRegNo}
                     </div>
-                    <div className="text-xs truncate">SVA: {booking.sva}</div>
                     <div className="text-xs truncate">
-                      {booking.checkInDate} → {booking.promisedDate}
+                      SVA: {booking.serviceAdvisorId}
+                    </div>
+                    <div className="text-xs truncate">
+                      {new Date(booking.checkinDate).toLocaleDateString()} →{" "}
+                      {new Date(booking.promiseDate).toLocaleDateString()}
                     </div>
                     <div className="text-xs font-medium truncate">
-                      {booking.currentProcess}
+                      {bookingUtils.getJobTypeText(booking.jobType)}
                     </div>
                   </div>
                 ))}
@@ -871,7 +657,7 @@ const BookingDashboard: React.FC = () => {
         {/* Bay Rows */}
         <div className="max-h-96 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
           {bays.map((bay, bayIndex) => {
-            const bayBookings = getBookingsForBay(bay.id);
+            const bayBookings = getBookingsForBay(parseInt(bay.id));
 
             return (
               <div
@@ -930,7 +716,9 @@ const BookingDashboard: React.FC = () => {
                     {/* Booking cards */}
                     {bayBookings
                       .filter(
-                        (b) => b.status === "active" || b.status === "stoppage"
+                        (b) =>
+                          b.status === "ACTIVE_BOARD" ||
+                          b.status === "JOB_STOPPAGE"
                       )
                       .map((booking) => {
                         const position = getBookingPosition(booking);
@@ -945,34 +733,37 @@ const BookingDashboard: React.FC = () => {
                               width: position.width,
                               zIndex: 10,
                             }}
-                            title={`Vehicle: ${booking.vehicleNo} | SVA: ${
-                              booking.sva
-                            } | Check-in: ${booking.checkInDate} | Promised: ${
-                              booking.promisedDate
-                            } | Process: ${
-                              booking.currentProcess
-                            } | Status: ${bookingUtils.getStatusText(
+                            title={`Vehicle: ${booking.carRegNo} | SVA: ${
+                              booking.serviceAdvisorId
+                            } | Check-in: ${new Date(
+                              booking.checkinDate
+                            ).toLocaleDateString()} | Promised: ${new Date(
+                              booking.promiseDate
+                            ).toLocaleDateString()} | Job Type: ${bookingUtils.getJobTypeText(
+                              booking.jobType
+                            )} | Status: ${bookingUtils.getStatusText(
                               booking.status
                             )}`}
                             onClick={() => openModal(booking)}
                           >
                             <div className="p-4 h-full flex flex-col justify-between">
                               <div className="text-sm font-bold text-gray-900">
-                                {booking.vehicleNo}
+                                {booking.carRegNo}
                               </div>
                               <div className="text-xs text-gray-700">
-                                SVA: {booking.sva}
+                                SVA: {booking.serviceAdvisorId}
                               </div>
                               <div className="text-xs text-gray-600">
-                                {booking.checkInDate} → {booking.promisedDate}
+                                {new Date(
+                                  booking.checkinDate
+                                ).toLocaleDateString()}{" "}
+                                →{" "}
+                                {new Date(
+                                  booking.promiseDate
+                                ).toLocaleDateString()}
                               </div>
-                              {booking.flow && (
-                                <div className="text-xs font-medium text-gray-700">
-                                  {booking.flow}
-                                </div>
-                              )}
                               <div className="text-xs font-medium text-gray-800">
-                                {booking.currentProcess}
+                                {bookingUtils.getJobTypeText(booking.jobType)}
                               </div>
                             </div>
                           </div>

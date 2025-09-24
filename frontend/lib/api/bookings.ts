@@ -1,39 +1,45 @@
 // Booking API helper functions
 
+import { tokenManager } from "@/lib/auth";
+
 export interface Booking {
-  id: string;
-  vehicleNo: string;
-  sva: string; // Service Advisor
-  checkInDate: string;
-  promisedDate: string;
-  flow?: string;
-  currentProcess: string;
+  id: number;
+  carRegNo: string;
+  checkinDate: string; // ISO string format
+  promiseDate: string; // ISO string format
+  serviceAdvisorId: number;
+  bayId: number;
+  jobType: "LIGHT" | "MEDIUM" | "HEAVY";
   status:
-    | "queuing"
-    | "bay_queue"
-    | "next_job"
-    | "active"
-    | "stoppage"
-    | "completed";
-  startTime: string;
-  endTime: string;
-  bayId: string;
-  priority: "high" | "medium" | "low";
-  processName?: string;
+    | "QUEUING"
+    | "BAY_QUEUE"
+    | "NEXT_JOB"
+    | "ACTIVE_BOARD"
+    | "JOB_STOPPAGE"
+    | "REPAIR_COMPLETION";
+  jobStartTime?: string; // Time format HH:mm:ss
+  jobEndTime?: string; // Time format HH:mm:ss
 }
 
 export interface ProcessStep {
-  id: string;
-  bookingId: string;
-  processName: string;
-  status: "started" | "paused" | "completed";
-  startTime: string;
-  endTime?: string;
-  notes?: string;
-  bayId?: string;
-  technicianId?: string;
-  createdAt: string;
-  updatedAt: string;
+  id: number;
+  fromStatus: string;
+  toStatus: string;
+  fromProcess: {
+    id: number;
+    name: string;
+    number: string;
+    status: "ACTIVE" | "INACTIVE";
+  };
+  toProcess: {
+    id: number;
+    name: string;
+    number: string;
+    status: "ACTIVE" | "INACTIVE";
+  };
+  changedAt: string; // ISO string format
+  jobStartTime?: string; // Time format HH:mm:ss
+  jobEndTime?: string; // Time format HH:mm:ss
 }
 
 export interface ProcessHistoryResponse {
@@ -49,27 +55,39 @@ export interface ProcessStepResponse {
 }
 
 export interface CreateBookingRequest {
-  vehicleNo: string;
-  sva: string;
-  checkInDate: string;
-  promisedDate: string;
-  flow?: string;
-  currentProcess: string;
-  priority: "high" | "medium" | "low";
+  carRegNo: string;
+  checkinDate: string; // ISO string format
+  promiseDate: string; // ISO string format
+  serviceAdvisorId: number;
+  bayId: number;
+  jobType: "LIGHT" | "MEDIUM" | "HEAVY";
+  status:
+    | "QUEUING"
+    | "BAY_QUEUE"
+    | "NEXT_JOB"
+    | "ACTIVE_BOARD"
+    | "JOB_STOPPAGE"
+    | "REPAIR_COMPLETION";
+  jobStartTime?: string; // Time format HH:mm:ss
+  jobEndTime?: string; // Time format HH:mm:ss
 }
 
 export interface UpdateBookingRequest {
+  carRegNo?: string;
+  checkinDate?: string;
+  promiseDate?: string;
+  serviceAdvisorId?: number;
+  bayId?: number;
+  jobType?: "LIGHT" | "MEDIUM" | "HEAVY";
   status?:
-    | "queuing"
-    | "bay_queue"
-    | "next_job"
-    | "active"
-    | "stoppage"
-    | "completed";
-  bayId?: string;
-  processName?: string;
-  startTime?: string;
-  endTime?: string;
+    | "QUEUING"
+    | "BAY_QUEUE"
+    | "NEXT_JOB"
+    | "ACTIVE_BOARD"
+    | "JOB_STOPPAGE"
+    | "REPAIR_COMPLETION";
+  jobStartTime?: string;
+  jobEndTime?: string;
 }
 
 export interface BookingResponse {
@@ -85,13 +103,8 @@ export interface BookingsResponse {
 }
 
 // API Base URL
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
-
-// Token management
-const getAuthToken = (): string | null => {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem("auth_token");
-};
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080";
 
 // API call helper
 async function apiCall<T>(
@@ -99,7 +112,7 @@ async function apiCall<T>(
   data: any,
   method: "POST" | "GET" | "PUT" | "PATCH" | "DELETE" = "POST"
 ): Promise<T> {
-  const token = getAuthToken();
+  const token = tokenManager.getToken();
 
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
     method,
@@ -127,12 +140,11 @@ export const bookingAPI = {
     bookingData: CreateBookingRequest
   ): Promise<BookingResponse> => {
     try {
-      const response = await apiCall<BookingResponse>(
-        "/api/bookings",
-        { ...bookingData, status: "queuing" },
-        "POST"
-      );
-      return response;
+      const response = await apiCall<Booking>("/bookings", bookingData, "POST");
+      return {
+        success: true,
+        data: response,
+      };
     } catch (error) {
       return {
         success: false,
@@ -145,12 +157,11 @@ export const bookingAPI = {
   // Get all bookings
   getBookings: async (): Promise<BookingsResponse> => {
     try {
-      const response = await apiCall<BookingsResponse>(
-        "/api/bookings",
-        {},
-        "GET"
-      );
-      return response;
+      const response = await apiCall<Booking[]>("/bookings", {}, "GET");
+      return {
+        success: true,
+        data: response,
+      };
     } catch (error) {
       return {
         success: false,
@@ -162,16 +173,19 @@ export const bookingAPI = {
 
   // Update booking status and details
   updateBooking: async (
-    bookingId: string,
+    bookingId: number,
     updateData: UpdateBookingRequest
   ): Promise<BookingResponse> => {
     try {
-      const response = await apiCall<BookingResponse>(
-        `/api/bookings/${bookingId}`,
+      const response = await apiCall<Booking>(
+        `/bookings/${bookingId}`,
         updateData,
-        "PATCH"
+        "PUT"
       );
-      return response;
+      return {
+        success: true,
+        data: response,
+      };
     } catch (error) {
       return {
         success: false,
@@ -181,20 +195,64 @@ export const bookingAPI = {
     }
   },
 
+  // Delete booking
+  deleteBooking: async (bookingId: number): Promise<BookingResponse> => {
+    try {
+      await apiCall<void>(`/bookings/${bookingId}`, {}, "DELETE");
+      return {
+        success: true,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message:
+          error instanceof Error ? error.message : "Failed to delete booking",
+      };
+    }
+  },
+
+  // Get booking history
+  getBookingHistory: async (
+    bookingId: number
+  ): Promise<ProcessHistoryResponse> => {
+    try {
+      const response = await apiCall<ProcessStep[]>(
+        `/bookings/${bookingId}/history`,
+        {},
+        "GET"
+      );
+      return {
+        success: true,
+        data: response,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message:
+          error instanceof Error
+            ? error.message
+            : "Failed to fetch booking history",
+      };
+    }
+  },
+
   // Workflow status transitions
   workflow: {
-    // Queuing → Bay Queue
+    // QUEUING → BAY_QUEUE
     assignToBay: async (
-      bookingId: string,
-      bayId: string
+      bookingId: number,
+      bayId: number
     ): Promise<BookingResponse> => {
       try {
-        const response = await apiCall<BookingResponse>(
-          `/api/bookings/${bookingId}`,
-          { status: "bay_queue", bayId },
-          "PATCH"
+        const response = await apiCall<Booking>(
+          `/bookings/${bookingId}`,
+          { status: "BAY_QUEUE", bayId },
+          "PUT"
         );
-        return response;
+        return {
+          success: true,
+          data: response,
+        };
       } catch (error) {
         return {
           success: false,
@@ -204,18 +262,18 @@ export const bookingAPI = {
       }
     },
 
-    // Bay Queue → Next Job
-    moveToNextJob: async (
-      bookingId: string,
-      processName: string
-    ): Promise<BookingResponse> => {
+    // BAY_QUEUE → NEXT_JOB
+    moveToNextJob: async (bookingId: number): Promise<BookingResponse> => {
       try {
-        const response = await apiCall<BookingResponse>(
-          `/api/bookings/${bookingId}`,
-          { status: "next_job", processName },
-          "PATCH"
+        const response = await apiCall<Booking>(
+          `/bookings/${bookingId}`,
+          { status: "NEXT_JOB" },
+          "PUT"
         );
-        return response;
+        return {
+          success: true,
+          data: response,
+        };
       } catch (error) {
         return {
           success: false,
@@ -227,19 +285,22 @@ export const bookingAPI = {
       }
     },
 
-    // Next Job → Active
+    // NEXT_JOB → ACTIVE_BOARD
     startJob: async (
-      bookingId: string,
-      startTime: string,
-      endTime: string
+      bookingId: number,
+      jobStartTime: string,
+      jobEndTime: string
     ): Promise<BookingResponse> => {
       try {
-        const response = await apiCall<BookingResponse>(
-          `/api/bookings/${bookingId}`,
-          { status: "active", startTime, endTime },
-          "PATCH"
+        const response = await apiCall<Booking>(
+          `/bookings/${bookingId}`,
+          { status: "ACTIVE_BOARD", jobStartTime, jobEndTime },
+          "PUT"
         );
-        return response;
+        return {
+          success: true,
+          data: response,
+        };
       } catch (error) {
         return {
           success: false,
@@ -249,15 +310,18 @@ export const bookingAPI = {
       }
     },
 
-    // Active → Stoppage
-    pauseJob: async (bookingId: string): Promise<BookingResponse> => {
+    // ACTIVE_BOARD → JOB_STOPPAGE
+    pauseJob: async (bookingId: number): Promise<BookingResponse> => {
       try {
-        const response = await apiCall<BookingResponse>(
-          `/api/bookings/${bookingId}`,
-          { status: "stoppage" },
-          "PATCH"
+        const response = await apiCall<Booking>(
+          `/bookings/${bookingId}`,
+          { status: "JOB_STOPPAGE" },
+          "PUT"
         );
-        return response;
+        return {
+          success: true,
+          data: response,
+        };
       } catch (error) {
         return {
           success: false,
@@ -267,15 +331,18 @@ export const bookingAPI = {
       }
     },
 
-    // Stoppage → Active
-    resumeJob: async (bookingId: string): Promise<BookingResponse> => {
+    // JOB_STOPPAGE → ACTIVE_BOARD
+    resumeJob: async (bookingId: number): Promise<BookingResponse> => {
       try {
-        const response = await apiCall<BookingResponse>(
-          `/api/bookings/${bookingId}`,
-          { status: "active" },
-          "PATCH"
+        const response = await apiCall<Booking>(
+          `/bookings/${bookingId}`,
+          { status: "ACTIVE_BOARD" },
+          "PUT"
         );
-        return response;
+        return {
+          success: true,
+          data: response,
+        };
       } catch (error) {
         return {
           success: false,
@@ -285,15 +352,18 @@ export const bookingAPI = {
       }
     },
 
-    // Active → Completed
-    completeJob: async (bookingId: string): Promise<BookingResponse> => {
+    // ACTIVE_BOARD → REPAIR_COMPLETION
+    completeJob: async (bookingId: number): Promise<BookingResponse> => {
       try {
-        const response = await apiCall<BookingResponse>(
-          `/api/bookings/${bookingId}`,
-          { status: "completed" },
-          "PATCH"
+        const response = await apiCall<Booking>(
+          `/bookings/${bookingId}`,
+          { status: "REPAIR_COMPLETION" },
+          "PUT"
         );
-        return response;
+        return {
+          success: true,
+          data: response,
+        };
       } catch (error) {
         return {
           success: false,
@@ -330,7 +400,9 @@ export const bookingAPI = {
         return {
           success: false,
           message:
-            error instanceof Error ? error.message : "Failed to add process step",
+            error instanceof Error
+              ? error.message
+              : "Failed to add process step",
         };
       }
     },
@@ -363,7 +435,9 @@ export const bookingAPI = {
     },
 
     // Fetch process history for a booking
-    getProcessHistory: async (bookingId: string): Promise<ProcessHistoryResponse> => {
+    getProcessHistory: async (
+      bookingId: string
+    ): Promise<ProcessHistoryResponse> => {
       try {
         const response = await apiCall<ProcessHistoryResponse>(
           `/api/bookings/${bookingId}/processes`,
@@ -375,7 +449,9 @@ export const bookingAPI = {
         return {
           success: false,
           message:
-            error instanceof Error ? error.message : "Failed to fetch process history",
+            error instanceof Error
+              ? error.message
+              : "Failed to fetch process history",
         };
       }
     },
@@ -386,17 +462,17 @@ export const bookingAPI = {
 export const bookingUtils = {
   getStatusColor: (status: Booking["status"]) => {
     switch (status) {
-      case "queuing":
+      case "QUEUING":
         return "bg-yellow-100 border-yellow-300 text-yellow-800";
-      case "bay_queue":
+      case "BAY_QUEUE":
         return "bg-blue-100 border-blue-300 text-blue-800";
-      case "next_job":
+      case "NEXT_JOB":
         return "bg-purple-100 border-purple-300 text-purple-800";
-      case "active":
+      case "ACTIVE_BOARD":
         return "bg-green-100 border-green-300 text-green-800";
-      case "stoppage":
+      case "JOB_STOPPAGE":
         return "bg-red-100 border-red-300 text-red-800";
-      case "completed":
+      case "REPAIR_COMPLETION":
         return "bg-gray-100 border-gray-300 text-gray-800";
       default:
         return "bg-gray-100 border-gray-300 text-gray-800";
@@ -405,18 +481,18 @@ export const bookingUtils = {
 
   getStatusText: (status: Booking["status"]) => {
     switch (status) {
-      case "queuing":
+      case "QUEUING":
         return "Queuing";
-      case "bay_queue":
+      case "BAY_QUEUE":
         return "Bay Queue";
-      case "next_job":
+      case "NEXT_JOB":
         return "Next Job";
-      case "active":
-        return "Active";
-      case "stoppage":
-        return "Stoppage";
-      case "completed":
-        return "Completed";
+      case "ACTIVE_BOARD":
+        return "Active Board";
+      case "JOB_STOPPAGE":
+        return "Job Stoppage";
+      case "REPAIR_COMPLETION":
+        return "Repair Completion";
       default:
         return "Unknown";
     }
@@ -424,17 +500,17 @@ export const bookingUtils = {
 
   getNextActions: (status: Booking["status"]) => {
     switch (status) {
-      case "queuing":
+      case "QUEUING":
         return ["Assign to Bay"];
-      case "bay_queue":
+      case "BAY_QUEUE":
         return ["Move to Next Job"];
-      case "next_job":
+      case "NEXT_JOB":
         return ["Start Job"];
-      case "active":
+      case "ACTIVE_BOARD":
         return ["Pause Job", "Complete Job"];
-      case "stoppage":
+      case "JOB_STOPPAGE":
         return ["Resume Job"];
-      case "completed":
+      case "REPAIR_COMPLETION":
         return [];
       default:
         return [];
@@ -446,57 +522,103 @@ export const bookingUtils = {
     targetStatus: Booking["status"]
   ) => {
     const validTransitions: Record<Booking["status"], Booking["status"][]> = {
-      queuing: ["bay_queue"],
-      bay_queue: ["next_job"],
-      next_job: ["active"],
-      active: ["stoppage", "completed"],
-      stoppage: ["active"],
-      completed: [],
+      QUEUING: ["BAY_QUEUE"],
+      BAY_QUEUE: ["NEXT_JOB"],
+      NEXT_JOB: ["ACTIVE_BOARD"],
+      ACTIVE_BOARD: ["JOB_STOPPAGE", "REPAIR_COMPLETION"],
+      JOB_STOPPAGE: ["ACTIVE_BOARD"],
+      REPAIR_COMPLETION: [],
     };
 
     return validTransitions[currentStatus]?.includes(targetStatus) || false;
+  },
+
+  getJobTypeText: (jobType: Booking["jobType"]) => {
+    switch (jobType) {
+      case "LIGHT":
+        return "Light";
+      case "MEDIUM":
+        return "Medium";
+      case "HEAVY":
+        return "Heavy";
+      default:
+        return "Unknown";
+    }
+  },
+
+  getJobTypeColor: (jobType: Booking["jobType"]) => {
+    switch (jobType) {
+      case "LIGHT":
+        return "bg-green-100 border-green-300 text-green-800";
+      case "MEDIUM":
+        return "bg-yellow-100 border-yellow-300 text-yellow-800";
+      case "HEAVY":
+        return "bg-red-100 border-red-300 text-red-800";
+      default:
+        return "bg-gray-100 border-gray-300 text-gray-800";
+    }
   },
 };
 
 // Form validation
 export const bookingValidators = {
-  vehicleNo: (vehicleNo: string): string | null => {
-    if (!vehicleNo.trim()) return "Vehicle number is required";
-    if (vehicleNo.trim().length < 3)
-      return "Vehicle number must be at least 3 characters";
+  carRegNo: (carRegNo: string): string | null => {
+    if (!carRegNo.trim()) return "Car registration number is required";
+    if (carRegNo.trim().length < 3)
+      return "Car registration number must be at least 3 characters";
     return null;
   },
 
-  sva: (sva: string): string | null => {
-    if (!sva.trim()) return "Service Advisor is required";
-    if (sva.trim().length < 2)
-      return "Service Advisor name must be at least 2 characters";
+  serviceAdvisorId: (serviceAdvisorId: number): string | null => {
+    if (!serviceAdvisorId || serviceAdvisorId <= 0)
+      return "Service Advisor is required";
     return null;
   },
 
-  checkInDate: (date: string): string | null => {
+  bayId: (bayId: number): string | null => {
+    if (!bayId || bayId <= 0) return "Bay is required";
+    return null;
+  },
+
+  checkinDate: (date: string): string | null => {
     if (!date) return "Check-in date is required";
-    const checkInDate = new Date(date);
+    const checkinDate = new Date(date);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    if (checkInDate < today) return "Check-in date cannot be in the past";
+    if (checkinDate < today) return "Check-in date cannot be in the past";
     return null;
   },
 
-  promisedDate: (promisedDate: string, checkInDate: string): string | null => {
-    if (!promisedDate) return "Promised date is required";
-    const promised = new Date(promisedDate);
-    const checkIn = new Date(checkInDate);
+  promiseDate: (promiseDate: string, checkinDate: string): string | null => {
+    if (!promiseDate) return "Promise date is required";
+    const promised = new Date(promiseDate);
+    const checkin = new Date(checkinDate);
 
-    if (promised <= checkIn) return "Promised date must be after check-in date";
+    if (promised <= checkin) return "Promise date must be after check-in date";
     return null;
   },
 
-  priority: (priority: string): string | null => {
-    if (!priority) return "Priority is required";
-    if (!["high", "medium", "low"].includes(priority))
-      return "Invalid priority level";
+  jobType: (jobType: string): string | null => {
+    if (!jobType) return "Job type is required";
+    if (!["LIGHT", "MEDIUM", "HEAVY"].includes(jobType))
+      return "Invalid job type";
+    return null;
+  },
+
+  status: (status: string): string | null => {
+    if (!status) return "Status is required";
+    if (
+      ![
+        "QUEUING",
+        "BAY_QUEUE",
+        "NEXT_JOB",
+        "ACTIVE_BOARD",
+        "JOB_STOPPAGE",
+        "REPAIR_COMPLETION",
+      ].includes(status)
+    )
+      return "Invalid status";
     return null;
   },
 };

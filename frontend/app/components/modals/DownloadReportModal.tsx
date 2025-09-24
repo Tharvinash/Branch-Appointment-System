@@ -34,37 +34,35 @@ const DownloadReportModal: React.FC<DownloadReportModalProps> = ({
       // Filter bookings if car reg no is provided
       const filteredBookings = carRegNo.trim()
         ? bookings.filter((b) =>
-            b.vehicleNo.toLowerCase().includes(carRegNo.toLowerCase())
+            b.carRegNo.toLowerCase().includes(carRegNo.toLowerCase())
           )
         : bookings;
 
       // Create CSV content
       const csvContent = [
         [
-          "Vehicle No",
-          "SVA",
+          "Car Registration No",
+          "Service Advisor ID",
           "Check-in Date",
-          "Promised Date",
-          "Current Process",
+          "Promise Date",
+          "Job Type",
           "Status",
-          "Start Time",
-          "End Time",
+          "Job Start Time",
+          "Job End Time",
           "Bay ID",
-          "Priority",
-          "Flow",
+          "Job Type",
         ],
         ...filteredBookings.map((booking) => [
-          booking.vehicleNo,
-          booking.sva,
-          booking.checkInDate,
-          booking.promisedDate,
-          booking.currentProcess,
+          booking.carRegNo,
+          booking.serviceAdvisorId,
+          new Date(booking.checkinDate).toLocaleDateString(),
+          new Date(booking.promiseDate).toLocaleDateString(),
+          bookingUtils.getJobTypeText(booking.jobType),
           bookingUtils.getStatusText(booking.status),
-          booking.startTime,
-          booking.endTime,
+          booking.jobStartTime || "",
+          booking.jobEndTime || "",
           booking.bayId,
-          booking.priority,
-          booking.flow || "",
+          bookingUtils.getJobTypeText(booking.jobType),
         ]),
       ]
         .map((row) => row.join(","))
