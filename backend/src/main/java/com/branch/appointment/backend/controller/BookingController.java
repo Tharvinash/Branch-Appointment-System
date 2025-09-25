@@ -2,6 +2,7 @@ package com.branch.appointment.backend.controller;
 
 import com.branch.appointment.backend.dto.BookingDto;
 import com.branch.appointment.backend.dto.BookingProcessDto;
+import com.branch.appointment.backend.dto.ReasonForStoppageDto;
 import com.branch.appointment.backend.service.BookingService;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpHeaders;
@@ -63,6 +64,11 @@ public class BookingController {
         .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + fileName)
         .contentType(MediaType.APPLICATION_OCTET_STREAM)
         .body(excelFile);
+  }
+
+  @GetMapping("/stoppage/reasons")
+  public List<ReasonForStoppageDto> getStoppageReasons() {
+    return bookingService.getStoppageReasons();
   }
 }
 

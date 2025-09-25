@@ -1,6 +1,7 @@
 package com.branch.appointment.backend.controller;
 
 import com.branch.appointment.backend.dto.BayDto;
+import com.branch.appointment.backend.dto.BayNameDto;
 import com.branch.appointment.backend.service.BayService;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -41,5 +42,10 @@ public class BayController {
   public ResponseEntity<Void> deleteBay(@PathVariable Long id) {
     bayService.deleteBay(id);
     return ResponseEntity.noContent().build();
+  }
+
+  @GetMapping("/names")
+  public List<BayNameDto> getBayNames() {
+    return bayService.getBayNames();
   }
 }

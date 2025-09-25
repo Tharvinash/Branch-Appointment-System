@@ -1,17 +1,9 @@
 package com.branch.appointment.backend.service;
 
-import com.branch.appointment.backend.dto.BayDto;
-import com.branch.appointment.backend.dto.BookingDto;
-import com.branch.appointment.backend.dto.BookingProcessDto;
-import com.branch.appointment.backend.entity.BayEntity;
-import com.branch.appointment.backend.entity.BookingEntity;
-import com.branch.appointment.backend.entity.BookingProcessEntity;
-import com.branch.appointment.backend.entity.ServiceAdvisorEntity;
+import com.branch.appointment.backend.dto.*;
+import com.branch.appointment.backend.entity.*;
 import com.branch.appointment.backend.enums.BookingStatusEnum;
-import com.branch.appointment.backend.repository.BayRepository;
-import com.branch.appointment.backend.repository.BookingProcessRepository;
-import com.branch.appointment.backend.repository.BookingRepository;
-import com.branch.appointment.backend.repository.ServiceAdvisorRepository;
+import com.branch.appointment.backend.repository.*;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -36,6 +28,7 @@ public class BookingService {
   private final BookingProcessRepository processRepository;
   private final ServiceAdvisorRepository serviceAdvisorRepository;
   private final BayRepository bayRepository;
+  private final ReasonForStoppageRepository reasonForStoppageRepository;
 
   public List<BookingDto> getBookings() {
     return bookingRepository.findAll().stream()
@@ -172,25 +165,50 @@ public class BookingService {
   }
 
   private BookingDto mapToDto(BookingEntity entity) {
+    if (entity == null) {
+      return null;
+    }
+
+    Long advisorId = entity.getServiceAdvisor() != null
+        ? entity.getServiceAdvisor().getId()
+        : null;
+
+    Long bayId = entity.getBay() != null
+        ? entity.getBay().getId()
+        : null;
+
     return new BookingDto(
         entity.getId(),
         entity.getCarRegNo(),
         entity.getCheckinDate(),
         entity.getPromiseDate(),
-        entity.getServiceAdvisor() != null ? entity.getServiceAdvisor().getId() : null,
-        entity.getBay() != null ? entity.getBay().getId() : null,
+        advisorId,
+        bayId,
         entity.getJobType(),
         entity.getStatus(),
         entity.getJobStartTime(),
-        entity.getJobEndTime()
+        entity.getJobEndTime(),
+        entity.getStoppageReason()
     );
   }
 
 
+
   private BayDto mapBayToDto(BayEntity entity) {
     if (entity == null) return null;
-    return new BayDto(entity.getId(), entity.getBayName(), entity.getBayNumber(), entity.getStatus());
+
+    return BayDto.builder()
+        .id(entity.getId())
+        .name(mapBayNameToDto(entity.getBayName())) // ✅ now returns BayNameDto
+        .number(entity.getBayNumber())
+        .status(entity.getStatus())
+        .technician(entity.getTechnician() != null
+            ? new TechnicianDto(entity.getTechnician().getId(), entity.getTechnician().getName(), entity.getTechnician().getStatus())
+            : null)
+        .build();
   }
+
+
 
   public byte[] generateProcessReport(String carRegNo) {
     List<BookingProcessEntity> processes;
@@ -229,8 +247,8 @@ public class BookingService {
         row.createCell(1).setCellValue(process.getFromStatus());
         row.createCell(2).setCellValue(process.getToStatus());
         row.createCell(3).setCellValue(process.getChangedAt() != null ? process.getChangedAt().toString() : "");
-        row.createCell(4).setCellValue(process.getFromProcess() != null ? process.getFromProcess().getBayName() : "");
-        row.createCell(5).setCellValue(process.getToProcess() != null ? process.getToProcess().getBayName() : "");
+//        row.createCell(4).setCellValue(process.getFromProcess() != null ? process.getFromProcess().getBayName() : "");
+//        row.createCell(5).setCellValue(process.getToProcess() != null ? process.getToProcess().getBayName() : "");
 
         lastCarNo = currentCarNo;
       }
@@ -242,6 +260,21 @@ public class BookingService {
     } catch (IOException e) {
       throw new RuntimeException("Failed to generate Excel report", e);
     }
+  }
+
+  private BayNameDto mapBayNameToDto(BayNameEntity entity) {
+    if (entity == null) return null;
+    return BayNameDto.builder()
+        .id(entity.getId())
+        .name(entity.getBayName())
+        .build();
+  }
+
+  public List<ReasonForStoppageDto> getStoppageReasons() {
+    return reasonForStoppageRepository.findAll()
+        .stream()
+        .map(s -> new ReasonForStoppageDto(s.getId(), s.getReasonName()))
+        .toList();
   }
 }
 
