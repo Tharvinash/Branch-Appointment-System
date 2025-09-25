@@ -72,6 +72,7 @@ public class BookingService {
         .orElseThrow(() -> new RuntimeException("Booking not found"));
 
     booking.setCarRegNo(dto.getCarRegNo());
+    booking.setStoppageReason(dto.getStoppageReason());
     booking.setCheckinDate(dto.getCheckinDate());
     booking.setPromiseDate(dto.getPromiseDate());
     if (dto.getServiceAdvisorId() != null) {
