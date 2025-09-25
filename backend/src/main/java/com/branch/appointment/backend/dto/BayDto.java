@@ -13,4 +13,5 @@ public class BayDto {
   private String name;
   private String number;
   private BayStatusEnum status;
+  private TechnicianDto technician;
 }

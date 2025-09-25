@@ -23,5 +23,6 @@ public class BookingDto {
   private BookingStatusEnum status;
   private LocalTime jobStartTime;
   private LocalTime jobEndTime;
+  private String stoppageReason;
 }
 
