@@ -71,7 +71,7 @@ export default function EditBayModal({
           } else {
             console.error(
               "Failed to fetch bay names:",
-              bayNamesResponse.message
+              bayNamesResponse.message,
             );
           }
         } catch (error) {
@@ -89,7 +89,7 @@ export default function EditBayModal({
           } else {
             console.error(
               "Failed to fetch technicians:",
-              techniciansResponse.message
+              techniciansResponse.message,
             );
           }
         } catch (error) {
@@ -117,7 +117,7 @@ export default function EditBayModal({
   }, [bay]);
 
   const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -241,7 +241,7 @@ export default function EditBayModal({
               value={formData.name.id.toString()}
               onValueChange={(value) => {
                 const selectedBayName = bayNames.find(
-                  (bayName) => bayName.id.toString() === value
+                  (bayName) => bayName.id.toString() === value,
                 );
                 if (selectedBayName) {
                   setFormData((prev) => ({ ...prev, name: selectedBayName }));
@@ -336,7 +336,7 @@ export default function EditBayModal({
                 const technicianId = value ? parseInt(value) : null;
                 setSelectedTechnicianId(technicianId);
                 const selectedTechnician = technicians.find(
-                  (t) => t.id === technicianId
+                  (t) => t.id === technicianId,
                 );
                 setFormData((prev) => ({
                   ...prev,

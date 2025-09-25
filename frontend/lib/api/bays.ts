@@ -50,7 +50,7 @@ const API_BASE_URL =
 async function apiCall<T>(
   endpoint: string,
   data?: any,
-  method: "GET" | "POST" | "PUT" | "DELETE" = "GET"
+  method: "GET" | "POST" | "PUT" | "DELETE" = "GET",
 ): Promise<ApiResponse<T>> {
   const token = tokenManager.getToken();
 
@@ -119,7 +119,7 @@ export const bayAPI = {
   // Update bay
   updateBay: async (
     bayId: number,
-    bayData: UpdateBayData
+    bayData: UpdateBayData,
   ): Promise<ApiResponse<Bay>> => {
     return apiCall<Bay>(`/bays/${bayId}`, bayData, "PUT");
   },
@@ -168,7 +168,7 @@ export const bayValidators = {
 export const bayUtils = {
   // Format bay status for display
   formatStatus: (
-    status: "ACTIVE" | "INACTIVE"
+    status: "ACTIVE" | "INACTIVE",
   ): { text: string; className: string } => {
     switch (status) {
       case "ACTIVE":
@@ -205,7 +205,7 @@ export const bayUtils = {
   // Filter bays by status
   filterBaysByStatus: (
     bays: Bay[],
-    status: "ACTIVE" | "INACTIVE" | "all"
+    status: "ACTIVE" | "INACTIVE" | "all",
   ): Bay[] => {
     if (status === "all") return bays;
     return bays.filter((bay) => bay.status === status);
@@ -217,8 +217,8 @@ export const bayUtils = {
     const lowercaseQuery = query.toLowerCase();
     return bays.filter(
       (bay) =>
-        bay.name.toLowerCase().includes(lowercaseQuery) ||
-        bay.number.toLowerCase().includes(lowercaseQuery)
+        bay.name.name.toLowerCase().includes(lowercaseQuery) ||
+        bay.number.toLowerCase().includes(lowercaseQuery),
     );
   },
 };

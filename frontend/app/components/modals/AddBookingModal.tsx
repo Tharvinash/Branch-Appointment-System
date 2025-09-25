@@ -76,18 +76,18 @@ const AddBookingModal: React.FC<AddBookingModalProps> = ({
     if (carRegNoError) newErrors.carRegNo = carRegNoError;
 
     const checkinDateError = bookingValidators.checkinDate(
-      formData.checkinDate
+      formData.checkinDate,
     );
     if (checkinDateError) newErrors.checkinDate = checkinDateError;
 
     const promiseDateError = bookingValidators.promiseDate(
       formData.promiseDate,
-      formData.checkinDate
+      formData.checkinDate,
     );
     if (promiseDateError) newErrors.promiseDate = promiseDateError;
 
     const serviceAdvisorIdError = bookingValidators.serviceAdvisorId(
-      formData.serviceAdvisorId
+      formData.serviceAdvisorId,
     );
     if (serviceAdvisorIdError)
       newErrors.serviceAdvisorId = serviceAdvisorIdError;
@@ -366,7 +366,7 @@ const AddBookingModal: React.FC<AddBookingModalProps> = ({
                 onValueChange={(value) =>
                   handleInputChange(
                     "jobType",
-                    value as "LIGHT" | "MEDIUM" | "HEAVY"
+                    value as "LIGHT" | "MEDIUM" | "HEAVY",
                   )
                 }
               >
