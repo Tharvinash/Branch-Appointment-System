@@ -141,18 +141,18 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
     if (carRegNoError) newErrors.carRegNo = carRegNoError;
 
     const checkinDateError = bookingValidators.checkinDate(
-      formData.checkinDate,
+      formData.checkinDate
     );
     if (checkinDateError) newErrors.checkinDate = checkinDateError;
 
     const promiseDateError = bookingValidators.promiseDate(
       formData.promiseDate,
-      formData.checkinDate,
+      formData.checkinDate
     );
     if (promiseDateError) newErrors.promiseDate = promiseDateError;
 
     const serviceAdvisorIdError = bookingValidators.serviceAdvisorId(
-      formData.serviceAdvisorId,
+      formData.serviceAdvisorId
     );
     if (serviceAdvisorIdError)
       newErrors.serviceAdvisorId = serviceAdvisorIdError;
@@ -212,7 +212,7 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
     try {
       const response = await bookingAPI.workflow.assignToBay(
         booking.id,
-        formData.bayId,
+        formData.bayId
       );
 
       if (response.success) {
@@ -236,7 +236,7 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
     try {
       const response = await bookingAPI.workflow.moveToNextJob(
         booking.id,
-        formData.bayId,
+        formData.bayId
       );
 
       if (response.success) {
@@ -324,7 +324,7 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
       const response = await bookingAPI.workflow.startJob(
         booking.id,
         formData.jobStartTime,
-        formData.jobEndTime,
+        formData.jobEndTime
       );
 
       if (response.success) {
@@ -356,7 +356,7 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Edit Booking</DialogTitle>
           <DialogDescription>
@@ -561,7 +561,7 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
                 onValueChange={(value) =>
                   handleInputChange(
                     "jobType",
-                    value as "LIGHT" | "MEDIUM" | "HEAVY",
+                    value as "LIGHT" | "MEDIUM" | "HEAVY"
                   )
                 }
               >
@@ -673,7 +673,7 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
                     } else {
                       // Handle other workflow actions
                       console.log(
-                        `Executing: ${action} for booking ${booking.id}`,
+                        `Executing: ${action} for booking ${booking.id}`
                       );
                       onClose();
                     }
@@ -683,12 +683,12 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
                     action === "Complete Job"
                       ? "bg-green-100 text-green-800 hover:bg-green-200 border-green-300"
                       : action === "Pause Job"
-                        ? "bg-red-100 text-red-800 hover:bg-red-200 border-red-300"
-                        : action === "Resume Job"
-                          ? "bg-blue-100 text-blue-800 hover:bg-blue-200 border-blue-300"
-                          : action === "Assign to Bay"
-                            ? "bg-toyota-red text-white hover:bg-toyota-red-dark border-toyota-red"
-                            : "bg-gray-100 text-gray-800 hover:bg-gray-200 border-gray-300"
+                      ? "bg-red-100 text-red-800 hover:bg-red-200 border-red-300"
+                      : action === "Resume Job"
+                      ? "bg-blue-100 text-blue-800 hover:bg-blue-200 border-blue-300"
+                      : action === "Assign to Bay"
+                      ? "bg-toyota-red text-white hover:bg-toyota-red-dark border-toyota-red"
+                      : "bg-gray-100 text-gray-800 hover:bg-gray-200 border-gray-300"
                   }
                 >
                   {isLoading && action === "Assign to Bay" ? (

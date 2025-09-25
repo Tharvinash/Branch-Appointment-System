@@ -20,14 +20,12 @@ export default function UserHeader({ user, onLogout }: UserHeaderProps) {
       <div className="container mx-auto px-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            <div className="w-12 h-12 bg-toyota-red rounded-lg flex items-center justify-center">
-              <span className="text-toyota-white font-bold text-xl">T</span>
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold">Branch Appointment System</h1>
-              <p className="text-gray-300 text-sm">
-                Toyota Gazoo Racing Inspired
-              </p>
+            <div className="h-12">
+              <img
+                src="/Toyota_carlogo.svg"
+                alt="Toyota Logo"
+                className="h-full w-auto"
+              />
             </div>
           </div>
 

@@ -28,11 +28,12 @@ export default function AdminHeader({ user, onLogout }: AdminHeaderProps) {
       <div className="container mx-auto px-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            <div>
-              <h1 className="text-2xl font-bold">Service Management System</h1>
-              <p className="text-gray-300 text-sm">
-                Streamlined. Powerful. Professional
-              </p>
+            <div className="h-12">
+              <img
+                src="/Toyota_carlogo.svg"
+                alt="Toyota Logo"
+                className="h-full w-auto"
+              />
             </div>
           </div>
 

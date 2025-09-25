@@ -110,7 +110,7 @@ const BookingDashboard: React.FC = () => {
   // Helper function to get service advisor name by ID
   const getServiceAdvisorName = (serviceAdvisorId: number): string => {
     const advisor = serviceAdvisors.find(
-      (advisor) => advisor.id === serviceAdvisorId,
+      (advisor) => advisor.id === serviceAdvisorId
     );
     return advisor ? advisor.name : `SVA: ${serviceAdvisorId}`;
   };
@@ -144,8 +144,8 @@ const BookingDashboard: React.FC = () => {
   const updateBooking = (updatedBooking: Booking) => {
     setBookings((prevBookings) =>
       prevBookings.map((booking) =>
-        booking.id === updatedBooking.id ? updatedBooking : booking,
-      ),
+        booking.id === updatedBooking.id ? updatedBooking : booking
+      )
     );
     closeModal();
   };
@@ -162,7 +162,7 @@ const BookingDashboard: React.FC = () => {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-toyota-black">
-              Booking Management Dashboard
+              Job Progress Control Board
             </h1>
             <p className="text-toyota-text-secondary mt-1">
               Real-time view of bay operations and job scheduling
@@ -355,7 +355,7 @@ const BookingDashboard: React.FC = () => {
                   <div
                     key={booking.id}
                     className={`p-2 rounded-lg border-l-4 shadow-sm ${bookingUtils.getStatusColor(
-                      booking.status,
+                      booking.status
                     )} cursor-pointer hover:shadow-lg transition-all duration-200`}
                     onClick={() => openModal(booking)}
                   >
@@ -386,7 +386,7 @@ const BookingDashboard: React.FC = () => {
                   <div
                     key={booking.id}
                     className={`p-2 rounded-lg border-l-4 shadow-sm ${bookingUtils.getStatusColor(
-                      booking.status,
+                      booking.status
                     )} cursor-pointer hover:shadow-lg transition-all duration-200`}
                     onClick={() => openModal(booking)}
                   >
@@ -417,7 +417,7 @@ const BookingDashboard: React.FC = () => {
                   <div
                     key={booking.id}
                     className={`p-2 rounded-lg border-l-4 shadow-sm ${bookingUtils.getStatusColor(
-                      booking.status,
+                      booking.status
                     )} cursor-pointer hover:shadow-lg transition-all duration-200`}
                     onClick={() => openModal(booking)}
                   >
@@ -467,8 +467,8 @@ const BookingDashboard: React.FC = () => {
                       bay.status === "ACTIVE"
                         ? "bg-green-500"
                         : bay.status === "INACTIVE"
-                          ? "bg-gray-400"
-                          : "bg-red-500"
+                        ? "bg-gray-400"
+                        : "bg-red-500"
                     }`}
                   ></div>
                 </div>
@@ -485,7 +485,7 @@ const BookingDashboard: React.FC = () => {
                   <div
                     key={booking.id}
                     className={`p-2 rounded-lg border-l-4 shadow-sm ${bookingUtils.getStatusColor(
-                      booking.status,
+                      booking.status
                     )} cursor-pointer hover:shadow-lg transition-all duration-200`}
                     onClick={() => openModal(booking)}
                   >
@@ -516,7 +516,7 @@ const BookingDashboard: React.FC = () => {
                   <div
                     key={booking.id}
                     className={`p-2 rounded-lg border-l-4 shadow-sm ${bookingUtils.getStatusColor(
-                      booking.status,
+                      booking.status
                     )} cursor-pointer hover:shadow-lg transition-all duration-200`}
                     onClick={() => openModal(booking)}
                   >
@@ -602,8 +602,8 @@ const BookingDashboard: React.FC = () => {
                         bay.status === "ACTIVE"
                           ? "bg-green-500"
                           : bay.status === "INACTIVE"
-                            ? "bg-gray-400"
-                            : "bg-red-500"
+                          ? "bg-gray-400"
+                          : "bg-red-500"
                       }`}
                     ></div>
                   </div>
@@ -638,7 +638,7 @@ const BookingDashboard: React.FC = () => {
                           <div
                             key={booking.id}
                             className={`absolute top-4 bottom-4 rounded-lg border-l-4 shadow-sm ${bookingUtils.getStatusColor(
-                              booking.status,
+                              booking.status
                             )} cursor-pointer hover:shadow-lg transition-all duration-200 transform hover:scale-105`}
                             style={{
                               left: position.left,
@@ -648,15 +648,15 @@ const BookingDashboard: React.FC = () => {
                             title={`Vehicle: ${
                               booking.carRegNo
                             } | SVA: ${getServiceAdvisorName(
-                              booking.serviceAdvisorId,
+                              booking.serviceAdvisorId
                             )} | Check-in: ${new Date(
-                              booking.checkinDate,
+                              booking.checkinDate
                             ).toLocaleDateString()} | Promised: ${new Date(
-                              booking.promiseDate,
+                              booking.promiseDate
                             ).toLocaleDateString()} | Job Type: ${bookingUtils.getJobTypeText(
-                              booking.jobType,
+                              booking.jobType
                             )} | Status: ${bookingUtils.getStatusText(
-                              booking.status,
+                              booking.status
                             )}`}
                             onClick={() => openModal(booking)}
                           >
@@ -667,16 +667,16 @@ const BookingDashboard: React.FC = () => {
                               <div className="text-xs text-gray-700">
                                 SVA:{" "}
                                 {getServiceAdvisorName(
-                                  booking.serviceAdvisorId,
+                                  booking.serviceAdvisorId
                                 )}
                               </div>
                               <div className="text-xs text-gray-600">
                                 {new Date(
-                                  booking.checkinDate,
+                                  booking.checkinDate
                                 ).toLocaleDateString()}{" "}
                                 →{" "}
                                 {new Date(
-                                  booking.promiseDate,
+                                  booking.promiseDate
                                 ).toLocaleDateString()}
                               </div>
                               <div className="text-xs font-medium text-gray-800">
