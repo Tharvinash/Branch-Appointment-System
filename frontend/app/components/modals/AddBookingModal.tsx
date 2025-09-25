@@ -76,18 +76,18 @@ const AddBookingModal: React.FC<AddBookingModalProps> = ({
     if (carRegNoError) newErrors.carRegNo = carRegNoError;
 
     const checkinDateError = bookingValidators.checkinDate(
-      formData.checkinDate,
+      formData.checkinDate
     );
     if (checkinDateError) newErrors.checkinDate = checkinDateError;
 
     const promiseDateError = bookingValidators.promiseDate(
       formData.promiseDate,
-      formData.checkinDate,
+      formData.checkinDate
     );
     if (promiseDateError) newErrors.promiseDate = promiseDateError;
 
     const serviceAdvisorIdError = bookingValidators.serviceAdvisorId(
-      formData.serviceAdvisorId,
+      formData.serviceAdvisorId
     );
     if (serviceAdvisorIdError)
       newErrors.serviceAdvisorId = serviceAdvisorIdError;
@@ -229,7 +229,7 @@ const AddBookingModal: React.FC<AddBookingModalProps> = ({
                 value={formData.carRegNo}
                 onChange={(e) => handleInputChange("carRegNo", e.target.value)}
                 placeholder="e.g. VJT3527"
-                className={errors.carRegNo ? "border-red-500" : ""}
+                className={`w-full ${errors.carRegNo ? "border-red-500" : ""}`}
               />
               {errors.carRegNo && (
                 <p className="text-red-500 text-xs">{errors.carRegNo}</p>
@@ -248,7 +248,9 @@ const AddBookingModal: React.FC<AddBookingModalProps> = ({
                 }
               >
                 <SelectTrigger
-                  className={errors.serviceAdvisorId ? "border-red-500" : ""}
+                  className={`w-full ${
+                    errors.serviceAdvisorId ? "border-red-500" : ""
+                  }`}
                   disabled={isLoadingAdvisors}
                 >
                   <SelectValue
@@ -289,7 +291,9 @@ const AddBookingModal: React.FC<AddBookingModalProps> = ({
                 onChange={(e) =>
                   handleInputChange("checkinDate", e.target.value)
                 }
-                className={errors.checkinDate ? "border-red-500" : ""}
+                className={`w-full ${
+                  errors.checkinDate ? "border-red-500" : ""
+                }`}
               />
               {errors.checkinDate && (
                 <p className="text-red-500 text-xs">{errors.checkinDate}</p>
@@ -308,7 +312,9 @@ const AddBookingModal: React.FC<AddBookingModalProps> = ({
                 onChange={(e) =>
                   handleInputChange("promiseDate", e.target.value)
                 }
-                className={errors.promiseDate ? "border-red-500" : ""}
+                className={`w-full ${
+                  errors.promiseDate ? "border-red-500" : ""
+                }`}
               />
               {errors.promiseDate && (
                 <p className="text-red-500 text-xs">{errors.promiseDate}</p>
@@ -330,7 +336,7 @@ const AddBookingModal: React.FC<AddBookingModalProps> = ({
                 }
               >
                 <SelectTrigger
-                  className={errors.bayId ? "border-red-500" : ""}
+                  className={`w-full ${errors.bayId ? "border-red-500" : ""}`}
                   disabled={isLoadingBays}
                 >
                   <SelectValue
@@ -340,7 +346,7 @@ const AddBookingModal: React.FC<AddBookingModalProps> = ({
                 <SelectContent>
                   {bays.map((bay) => (
                     <SelectItem key={bay.id} value={bay.id.toString()}>
-                      {bay.name} (Bay {bay.number})
+                      {bay.name.name} (Bay {bay.number})
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -360,12 +366,12 @@ const AddBookingModal: React.FC<AddBookingModalProps> = ({
                 onValueChange={(value) =>
                   handleInputChange(
                     "jobType",
-                    value as "LIGHT" | "MEDIUM" | "HEAVY",
+                    value as "LIGHT" | "MEDIUM" | "HEAVY"
                   )
                 }
               >
                 <SelectTrigger
-                  className={errors.jobType ? "border-red-500" : ""}
+                  className={`w-full ${errors.jobType ? "border-red-500" : ""}`}
                 >
                   <SelectValue />
                 </SelectTrigger>
@@ -394,6 +400,7 @@ const AddBookingModal: React.FC<AddBookingModalProps> = ({
                   handleInputChange("jobStartTime", e.target.value)
                 }
                 placeholder="08:00"
+                className="w-full"
               />
             </div>
 
@@ -408,6 +415,7 @@ const AddBookingModal: React.FC<AddBookingModalProps> = ({
                   handleInputChange("jobEndTime", e.target.value)
                 }
                 placeholder="17:00"
+                className="w-full"
               />
             </div>
           </div>

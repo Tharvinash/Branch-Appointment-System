@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
-import { CreateBayData, bayAPI, bayValidators } from "@/lib/api/bays";
+import React, { useState, useEffect } from "react";
+import { CreateBayData, bayAPI, bayValidators, BayName } from "@/lib/api/bays";
+import { technicianAPI, Technician } from "@/lib/api/technicians";
 import {
   Dialog,
   DialogContent,
@@ -33,16 +34,69 @@ export default function AddBayModal({
   onSuccess,
 }: AddBayModalProps) {
   const [formData, setFormData] = useState<CreateBayData>({
-    name: "",
+    name: { id: 0, name: "" },
     number: "",
     status: "ACTIVE",
+    technician: undefined,
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [apiError, setApiError] = useState("");
+  const [bayNames, setBayNames] = useState<BayName[]>([]);
+  const [technicians, setTechnicians] = useState<Technician[]>([]);
+  const [isLoadingBayNames, setIsLoadingBayNames] = useState(false);
+  const [isLoadingTechnicians, setIsLoadingTechnicians] = useState(false);
+  const [selectedTechnicianId, setSelectedTechnicianId] = useState<
+    number | null
+  >(null);
+
+  // Fetch bay names and technicians when modal opens
+  useEffect(() => {
+    const fetchData = async () => {
+      if (open) {
+        // Fetch bay names
+        setIsLoadingBayNames(true);
+        try {
+          const bayNamesResponse = await bayAPI.getBayNames();
+          if (bayNamesResponse.success && bayNamesResponse.data) {
+            setBayNames(bayNamesResponse.data);
+          } else {
+            console.error(
+              "Failed to fetch bay names:",
+              bayNamesResponse.message
+            );
+          }
+        } catch (error) {
+          console.error("Error fetching bay names:", error);
+        } finally {
+          setIsLoadingBayNames(false);
+        }
+
+        // Fetch technicians
+        setIsLoadingTechnicians(true);
+        try {
+          const techniciansResponse = await technicianAPI.getAllTechnicians();
+          if (techniciansResponse.success && techniciansResponse.data) {
+            setTechnicians(techniciansResponse.data);
+          } else {
+            console.error(
+              "Failed to fetch technicians:",
+              techniciansResponse.message
+            );
+          }
+        } catch (error) {
+          console.error("Error fetching technicians:", error);
+        } finally {
+          setIsLoadingTechnicians(false);
+        }
+      }
+    };
+
+    fetchData();
+  }, [open]);
 
   const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -57,7 +111,7 @@ export default function AddBayModal({
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
-    const nameError = bayValidators.bayName(formData.name);
+    const nameError = bayValidators.bayName(formData.name.name);
     if (nameError) newErrors.name = nameError;
 
     const bayNoError = bayValidators.bayNo(formData.number);
@@ -65,6 +119,11 @@ export default function AddBayModal({
 
     const statusError = bayValidators.bayStatus(formData.status);
     if (statusError) newErrors.status = statusError;
+
+    // Validate technician selection
+    if (!formData.technician) {
+      newErrors.technician = "Technician selection is required";
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -96,10 +155,12 @@ export default function AddBayModal({
 
   const handleClose = () => {
     setFormData({
-      name: "",
+      name: { id: 0, name: "" },
       number: "",
       status: "ACTIVE",
+      technician: undefined,
     });
+    setSelectedTechnicianId(null);
     setErrors({});
     setApiError("");
     onClose();
@@ -145,16 +206,42 @@ export default function AddBayModal({
             <Label htmlFor="name">
               Bay Name <span className="text-red-500">*</span>
             </Label>
-            <Input
-              id="name"
-              name="name"
-              type="text"
-              required
-              value={formData.name}
-              onChange={handleInputChange}
-              className={errors.name ? "border-red-500" : ""}
-              placeholder="Enter bay name (e.g., Service Bay 1)"
-            />
+            <Select
+              value={formData.name.id.toString()}
+              onValueChange={(value) => {
+                const selectedBayName = bayNames.find(
+                  (bayName) => bayName.id.toString() === value
+                );
+                if (selectedBayName) {
+                  setFormData((prev) => ({ ...prev, name: selectedBayName }));
+                }
+                // Clear error when user selects
+                if (errors.name) {
+                  setErrors((prev) => ({ ...prev, name: "" }));
+                }
+                if (apiError) setApiError("");
+              }}
+            >
+              <SelectTrigger
+                className={`w-full ${errors.name ? "border-red-500" : ""}`}
+                disabled={isLoadingBayNames}
+              >
+                <SelectValue
+                  placeholder={
+                    isLoadingBayNames
+                      ? "Loading bay names..."
+                      : "Select bay name"
+                  }
+                />
+              </SelectTrigger>
+              <SelectContent>
+                {bayNames.map((bayName) => (
+                  <SelectItem key={bayName.id} value={bayName.id.toString()}>
+                    {bayName.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             {errors.name && (
               <p className="text-sm text-red-600">{errors.name}</p>
             )}
@@ -172,7 +259,7 @@ export default function AddBayModal({
               required
               value={formData.number}
               onChange={handleInputChange}
-              className={errors.number ? "border-red-500" : ""}
+              className={`w-full ${errors.number ? "border-red-500" : ""}`}
               placeholder="Enter bay number (e.g., B-01, Bay A)"
             />
             {errors.number && (
@@ -194,7 +281,9 @@ export default function AddBayModal({
                 handleInputChange(event);
               }}
             >
-              <SelectTrigger className={errors.status ? "border-red-500" : ""}>
+              <SelectTrigger
+                className={`w-full ${errors.status ? "border-red-500" : ""}`}
+              >
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -204,6 +293,60 @@ export default function AddBayModal({
             </Select>
             {errors.status && (
               <p className="text-sm text-red-600">{errors.status}</p>
+            )}
+          </div>
+
+          {/* Technician Field */}
+          <div className="space-y-2">
+            <Label htmlFor="technician">
+              Assign Technician <span className="text-red-500">*</span>
+            </Label>
+            <Select
+              value={selectedTechnicianId?.toString() || ""}
+              onValueChange={(value) => {
+                const technicianId = value ? parseInt(value) : null;
+                setSelectedTechnicianId(technicianId);
+                const selectedTechnician = technicians.find(
+                  (t) => t.id === technicianId
+                );
+                setFormData((prev) => ({
+                  ...prev,
+                  technician: selectedTechnician || undefined,
+                }));
+                // Clear error when user selects
+                if (errors.technician) {
+                  setErrors((prev) => ({ ...prev, technician: "" }));
+                }
+                if (apiError) setApiError("");
+              }}
+            >
+              <SelectTrigger
+                className={`w-full ${
+                  errors.technician ? "border-red-500" : ""
+                }`}
+                disabled={isLoadingTechnicians}
+              >
+                <SelectValue
+                  placeholder={
+                    isLoadingTechnicians
+                      ? "Loading technicians..."
+                      : "Select technician"
+                  }
+                />
+              </SelectTrigger>
+              <SelectContent>
+                {technicians.map((technician) => (
+                  <SelectItem
+                    key={technician.id}
+                    value={technician.id.toString()}
+                  >
+                    {technician.name} ({technician.status})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {errors.technician && (
+              <p className="text-sm text-red-600">{errors.technician}</p>
             )}
           </div>
         </form>

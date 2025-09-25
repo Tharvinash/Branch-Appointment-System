@@ -2,23 +2,38 @@
 
 import { tokenManager } from "@/lib/auth";
 
-export interface Bay {
+// Import Technician interface
+export interface Technician {
   id: number;
   name: string;
+  status: "AVAILABLE" | "ON_LEAVE";
+}
+
+export interface Bay {
+  id: number;
+  name: BayName;
   number: string;
   status: "ACTIVE" | "INACTIVE";
+  technician?: Technician;
+}
+
+export interface BayName {
+  id: number;
+  name: string;
 }
 
 export interface CreateBayData {
-  name: string;
+  name: BayName;
   number: string;
   status: "ACTIVE" | "INACTIVE";
+  technician?: Technician;
 }
 
 export interface UpdateBayData {
-  name: string;
+  name: BayName;
   number: string;
   status: "ACTIVE" | "INACTIVE";
+  technician?: Technician;
 }
 
 export interface ApiResponse<T> {
@@ -35,7 +50,7 @@ const API_BASE_URL =
 async function apiCall<T>(
   endpoint: string,
   data?: any,
-  method: "GET" | "POST" | "PUT" | "DELETE" = "GET",
+  method: "GET" | "POST" | "PUT" | "DELETE" = "GET"
 ): Promise<ApiResponse<T>> {
   const token = tokenManager.getToken();
 
@@ -104,7 +119,7 @@ export const bayAPI = {
   // Update bay
   updateBay: async (
     bayId: number,
-    bayData: UpdateBayData,
+    bayData: UpdateBayData
   ): Promise<ApiResponse<Bay>> => {
     return apiCall<Bay>(`/bays/${bayId}`, bayData, "PUT");
   },
@@ -112,6 +127,11 @@ export const bayAPI = {
   // Delete bay
   deleteBay: async (bayId: number): Promise<ApiResponse<void>> => {
     return apiCall<void>(`/bays/${bayId}`, undefined, "DELETE");
+  },
+
+  // Get bay names
+  getBayNames: async (): Promise<ApiResponse<BayName[]>> => {
+    return apiCall<BayName[]>("/bays/names");
   },
 };
 
@@ -148,7 +168,7 @@ export const bayValidators = {
 export const bayUtils = {
   // Format bay status for display
   formatStatus: (
-    status: "ACTIVE" | "INACTIVE",
+    status: "ACTIVE" | "INACTIVE"
   ): { text: string; className: string } => {
     switch (status) {
       case "ACTIVE":
@@ -185,7 +205,7 @@ export const bayUtils = {
   // Filter bays by status
   filterBaysByStatus: (
     bays: Bay[],
-    status: "ACTIVE" | "INACTIVE" | "all",
+    status: "ACTIVE" | "INACTIVE" | "all"
   ): Bay[] => {
     if (status === "all") return bays;
     return bays.filter((bay) => bay.status === status);
@@ -198,7 +218,7 @@ export const bayUtils = {
     return bays.filter(
       (bay) =>
         bay.name.toLowerCase().includes(lowercaseQuery) ||
-        bay.number.toLowerCase().includes(lowercaseQuery),
+        bay.number.toLowerCase().includes(lowercaseQuery)
     );
   },
 };

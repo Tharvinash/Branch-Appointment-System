@@ -135,7 +135,7 @@ export default function DeleteBayDialog({
                 </div>
                 <div className="flex justify-between">
                   <span className="font-medium text-toyota-black">Name:</span>
-                  <span className="text-toyota-black">{bay.name}</span>
+                  <span className="text-toyota-black">{bay.name.name}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="font-medium text-toyota-black">Number:</span>

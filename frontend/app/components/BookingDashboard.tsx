@@ -6,6 +6,7 @@ import BookingEditModal from "./modals/BookingEditModal";
 import DownloadReportModal from "./modals/DownloadReportModal";
 import ProcessHistoryModal from "./modals/ProcessHistoryModal";
 import AddBookingModal from "./modals/AddBookingModal";
+import StoppageReasonModal from "./modals/StoppageReasonModal";
 import { Bay, bayAPI, bayUtils } from "@/lib/api/bays";
 import { ServiceAdvisor, serviceAdvisorAPI } from "@/lib/api/service-advisors";
 
@@ -22,6 +23,10 @@ const BookingDashboard: React.FC = () => {
   const [selectedBookingForHistory, setSelectedBookingForHistory] =
     useState<Booking | null>(null);
   const [isAddBookingModalOpen, setIsAddBookingModalOpen] = useState(false);
+  const [isStoppageModalOpen, setIsStoppageModalOpen] = useState(false);
+  const [selectedBookingForStoppage, setSelectedBookingForStoppage] = useState<
+    number | null
+  >(null);
 
   // Generate time slots from 8:00 AM to 5:00 PM (30-minute intervals)
   const generateTimeSlots = () => {
@@ -118,7 +123,7 @@ const BookingDashboard: React.FC = () => {
   // Helper function to get bay name by ID
   const getBayName = (bayId: number): string => {
     const bay = bays.find((bay) => bay.id === bayId);
-    return bay ? bay.name : `Bay ${bayId}`;
+    return bay ? bay.name.name : `Bay ${bayId}`;
   };
 
   // Process options for dropdown
@@ -155,6 +160,49 @@ const BookingDashboard: React.FC = () => {
     setIsProcessHistoryModalOpen(true);
   };
 
+  const handlePauseJob = (bookingId: number) => {
+    setSelectedBookingForStoppage(bookingId);
+    setIsStoppageModalOpen(true);
+  };
+
+  const handleStoppageConfirm = async (reasonId: number) => {
+    if (!selectedBookingForStoppage) return;
+
+    try {
+      // First get the stoppage reasons to find the reason name
+      const reasonsResponse = await bookingAPI.getStoppageReasons();
+      if (!reasonsResponse.success || !reasonsResponse.data) {
+        console.error("Failed to fetch stoppage reasons");
+        return;
+      }
+
+      // Find the reason name by ID
+      const selectedReason = reasonsResponse.data.find(
+        (reason) => reason.id === reasonId
+      );
+      if (!selectedReason) {
+        console.error("Selected reason not found");
+        return;
+      }
+
+      // Pause the job with the reason name
+      const response = await bookingAPI.workflow.pauseJob(
+        selectedBookingForStoppage,
+        selectedReason.reasonName
+      );
+
+      if (response.success) {
+        setIsStoppageModalOpen(false);
+        setSelectedBookingForStoppage(null);
+        fetchBookings(); // Refresh the bookings list
+      } else {
+        console.error("Failed to pause job:", response.message);
+      }
+    } catch (error) {
+      console.error("Error pausing job:", error);
+    }
+  };
+
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
       {/* Header */}
@@ -179,7 +227,7 @@ const BookingDashboard: React.FC = () => {
             </div>
             <button
               onClick={() => setIsDownloadModalOpen(true)}
-              className="btn-toyota-outline px-4 py-2 text-sm flex items-center space-x-2"
+              className="btn-toyota-outline px-4 py-2 text-sm flex items-center space-x-2 h-10"
             >
               <svg
                 className="w-4 h-4"
@@ -198,7 +246,7 @@ const BookingDashboard: React.FC = () => {
             </button>
             <button
               onClick={() => setIsAddBookingModalOpen(true)}
-              className="btn-toyota-primary px-4 py-2 text-sm"
+              className="btn-toyota-primary px-4 py-2 text-sm h-10"
             >
               Add Booking
             </button>
@@ -372,6 +420,12 @@ const BookingDashboard: React.FC = () => {
                     <div className="text-xs font-medium truncate">
                       {bookingUtils.getJobTypeText(booking.jobType)}
                     </div>
+                    {booking.status === "JOB_STOPPAGE" &&
+                      booking.stoppageReason && (
+                        <div className="text-xs text-red-600 font-medium truncate">
+                          Reason: {booking.stoppageReason}
+                        </div>
+                      )}
                   </div>
                 ))}
             </div>
@@ -403,6 +457,12 @@ const BookingDashboard: React.FC = () => {
                     <div className="text-xs font-medium truncate">
                       {bookingUtils.getJobTypeText(booking.jobType)}
                     </div>
+                    {booking.status === "JOB_STOPPAGE" &&
+                      booking.stoppageReason && (
+                        <div className="text-xs text-red-600 font-medium truncate">
+                          Reason: {booking.stoppageReason}
+                        </div>
+                      )}
                   </div>
                 ))}
             </div>
@@ -434,6 +494,12 @@ const BookingDashboard: React.FC = () => {
                     <div className="text-xs font-medium truncate">
                       {bookingUtils.getJobTypeText(booking.jobType)}
                     </div>
+                    {booking.status === "JOB_STOPPAGE" &&
+                      booking.stoppageReason && (
+                        <div className="text-xs text-red-600 font-medium truncate">
+                          Reason: {booking.stoppageReason}
+                        </div>
+                      )}
                   </div>
                 ))}
             </div>
@@ -447,8 +513,11 @@ const BookingDashboard: React.FC = () => {
                   key={bay.id}
                   className="p-2 bg-white rounded border h-16 flex flex-col justify-center"
                 >
-                  <div className="text-xs font-bold">{bay.number}</div>
-                  <div className="text-xs text-gray-600">{bay.name}</div>
+                  <div className="text-xs font-bold">{bay.name.name}</div>
+                  <div className="text-xs text-gray-600">{bay.number}</div>
+                  <div className="text-xs text-gray-500">
+                    {bay.technician?.name || "Not Assigned"}
+                  </div>
                 </div>
               ))}
             </div>
@@ -502,6 +571,12 @@ const BookingDashboard: React.FC = () => {
                     <div className="text-xs font-medium truncate">
                       {bookingUtils.getJobTypeText(booking.jobType)}
                     </div>
+                    {booking.status === "JOB_STOPPAGE" &&
+                      booking.stoppageReason && (
+                        <div className="text-xs text-red-600 font-medium truncate">
+                          Reason: {booking.stoppageReason}
+                        </div>
+                      )}
                   </div>
                 ))}
             </div>
@@ -533,6 +608,12 @@ const BookingDashboard: React.FC = () => {
                     <div className="text-xs font-medium truncate">
                       {bookingUtils.getJobTypeText(booking.jobType)}
                     </div>
+                    {booking.status === "JOB_STOPPAGE" &&
+                      booking.stoppageReason && (
+                        <div className="text-xs text-red-600 font-medium truncate">
+                          Reason: {booking.stoppageReason}
+                        </div>
+                      )}
                   </div>
                 ))}
             </div>
@@ -586,10 +667,13 @@ const BookingDashboard: React.FC = () => {
                 <div className="w-32 p-3 border-r-2 border-gray-300 bg-inherit flex-shrink-0">
                   <div className="h-40 flex flex-col justify-center">
                     <div className="text-sm font-bold text-toyota-black">
-                      {bay.number}
+                      {bay.name.name}
                     </div>
                     <div className="text-xs text-toyota-text-secondary font-medium">
-                      {bay.name}
+                      {bay.number}
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      {bay.technician?.name || "Not Assigned"}
                     </div>
                   </div>
                 </div>
@@ -682,6 +766,12 @@ const BookingDashboard: React.FC = () => {
                               <div className="text-xs font-medium text-gray-800">
                                 {bookingUtils.getJobTypeText(booking.jobType)}
                               </div>
+                              {booking.status === "JOB_STOPPAGE" &&
+                                booking.stoppageReason && (
+                                  <div className="text-xs text-red-600 font-medium">
+                                    Reason: {booking.stoppageReason}
+                                  </div>
+                                )}
                             </div>
                           </div>
                         );
@@ -704,6 +794,7 @@ const BookingDashboard: React.FC = () => {
           fetchBookings();
         }}
         onViewHistory={handleViewHistory}
+        onPauseJob={handlePauseJob}
       />
 
       {/* Download Report Modal */}
@@ -728,6 +819,17 @@ const BookingDashboard: React.FC = () => {
         open={isAddBookingModalOpen}
         onClose={() => setIsAddBookingModalOpen(false)}
         onSuccess={() => fetchBookings()}
+      />
+
+      {/* Stoppage Reason Modal */}
+      <StoppageReasonModal
+        open={isStoppageModalOpen}
+        onClose={() => {
+          setIsStoppageModalOpen(false);
+          setSelectedBookingForStoppage(null);
+        }}
+        onConfirm={handleStoppageConfirm}
+        bookingId={selectedBookingForStoppage || 0}
       />
     </div>
   );
