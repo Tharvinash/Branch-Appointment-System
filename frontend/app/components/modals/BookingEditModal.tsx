@@ -143,18 +143,18 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
     if (carRegNoError) newErrors.carRegNo = carRegNoError;
 
     const checkinDateError = bookingValidators.checkinDate(
-      formData.checkinDate,
+      formData.checkinDate
     );
     if (checkinDateError) newErrors.checkinDate = checkinDateError;
 
     const promiseDateError = bookingValidators.promiseDate(
       formData.promiseDate,
-      formData.checkinDate,
+      formData.checkinDate
     );
     if (promiseDateError) newErrors.promiseDate = promiseDateError;
 
     const serviceAdvisorIdError = bookingValidators.serviceAdvisorId(
-      formData.serviceAdvisorId,
+      formData.serviceAdvisorId
     );
     if (serviceAdvisorIdError)
       newErrors.serviceAdvisorId = serviceAdvisorIdError;
@@ -214,7 +214,7 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
     try {
       const response = await bookingAPI.workflow.assignToBay(
         booking.id,
-        formData.bayId,
+        formData.bayId
       );
 
       if (response.success) {
@@ -238,7 +238,7 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
     try {
       const response = await bookingAPI.workflow.moveToNextJob(
         booking.id,
-        formData.bayId,
+        formData.bayId
       );
 
       if (response.success) {
@@ -313,7 +313,7 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
       const response = await bookingAPI.workflow.startJob(
         booking.id,
         formData.jobStartTime,
-        formData.jobEndTime,
+        formData.jobEndTime
       );
 
       if (response.success) {
@@ -394,38 +394,109 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
             </div>
           </div>
 
+          {/* API Error Alert */}
+          {apiError && (
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <svg
+                    className="h-5 w-5 text-red-400"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm">{apiError}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Conditional Form Fields - Only show for NEXT_JOB status */}
+          {booking.status === "NEXT_JOB" && (
+            <div className="space-y-4">
+              <h4 className="text-sm font-semibold text-toyota-black mb-3">
+                Job Configuration
+              </h4>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Bay Selection */}
+                <div className="space-y-2">
+                  <Label htmlFor="bayId">
+                    Bay <span className="text-red-500">*</span>
+                  </Label>
+                  <Select
+                    value={formData.bayId.toString()}
+                    onValueChange={(value) =>
+                      handleInputChange("bayId", parseInt(value))
+                    }
+                  >
+                    <SelectTrigger
+                      className={errors.bayId ? "border-red-500" : ""}
+                      disabled={isLoadingBays}
+                    >
+                      <SelectValue
+                        placeholder={
+                          isLoadingBays ? "Loading..." : "Select Bay"
+                        }
+                      />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {bays.map((bay) => (
+                        <SelectItem key={bay.id} value={bay.id.toString()}>
+                          {bay.name.name} (Bay {bay.number})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {errors.bayId && (
+                    <p className="text-red-500 text-xs">{errors.bayId}</p>
+                  )}
+                </div>
+
+                {/* Job Start Time */}
+                <div className="space-y-2">
+                  <Label htmlFor="jobStartTime">Job Start Time</Label>
+                  <Input
+                    id="jobStartTime"
+                    type="time"
+                    value={formData.jobStartTime}
+                    onChange={(e) =>
+                      handleInputChange("jobStartTime", e.target.value)
+                    }
+                  />
+                </div>
+
+                {/* Job End Time */}
+                <div className="space-y-2">
+                  <Label htmlFor="jobEndTime">Job End Time</Label>
+                  <Input
+                    id="jobEndTime"
+                    type="time"
+                    value={formData.jobEndTime}
+                    onChange={(e) =>
+                      handleInputChange("jobEndTime", e.target.value)
+                    }
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* COMMENTED OUT - Original form fields for future use */}
+          {/*
           <form
             id="edit-booking-form"
             onSubmit={handleSubmit}
             className="space-y-4"
           >
-            {/* API Error Alert */}
-            {apiError && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-                <div className="flex">
-                  <div className="flex-shrink-0">
-                    <svg
-                      className="h-5 w-5 text-red-400"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  </div>
-                  <div className="ml-3">
-                    <p className="text-sm">{apiError}</p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Form Fields */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Car Registration Number */}
               <div className="space-y-2">
                 <Label htmlFor="carRegNo">
                   Car Registration Number{" "}
@@ -445,7 +516,6 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
                 )}
               </div>
 
-              {/* Service Advisor */}
               <div className="space-y-2">
                 <Label htmlFor="serviceAdvisorId">
                   Service Advisor <span className="text-red-500">*</span>
@@ -486,7 +556,6 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
                 )}
               </div>
 
-              {/* Check-in Date */}
               <div className="space-y-2">
                 <Label htmlFor="checkinDate">
                   Check-in Date <span className="text-red-500">*</span>
@@ -505,7 +574,6 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
                 )}
               </div>
 
-              {/* Promise Date */}
               <div className="space-y-2">
                 <Label htmlFor="promiseDate">
                   Promise Date <span className="text-red-500">*</span>
@@ -524,39 +592,6 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
                 )}
               </div>
 
-              {/* Bay */}
-              <div className="space-y-2">
-                <Label htmlFor="bayId">
-                  Bay <span className="text-red-500">*</span>
-                </Label>
-                <Select
-                  value={formData.bayId.toString()}
-                  onValueChange={(value) =>
-                    handleInputChange("bayId", parseInt(value))
-                  }
-                >
-                  <SelectTrigger
-                    className={errors.bayId ? "border-red-500" : ""}
-                    disabled={isLoadingBays}
-                  >
-                    <SelectValue
-                      placeholder={isLoadingBays ? "Loading..." : "Select Bay"}
-                    />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {bays.map((bay) => (
-                      <SelectItem key={bay.id} value={bay.id.toString()}>
-                        {bay.name.name} (Bay {bay.number})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {errors.bayId && (
-                  <p className="text-red-500 text-xs">{errors.bayId}</p>
-                )}
-              </div>
-
-              {/* Job Type */}
               <div className="space-y-2">
                 <Label htmlFor="jobType">
                   Job Type <span className="text-red-500">*</span>
@@ -586,7 +621,6 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
                 )}
               </div>
 
-              {/* Status */}
               <div className="space-y-2">
                 <Label htmlFor="status">
                   Status <span className="text-red-500">*</span>
@@ -617,138 +651,115 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
                   <p className="text-red-500 text-xs">{errors.status}</p>
                 )}
               </div>
-
-              {/* Job Start Time */}
-              <div className="space-y-2">
-                <Label htmlFor="jobStartTime">Job Start Time (Optional)</Label>
-                <Input
-                  id="jobStartTime"
-                  type="time"
-                  value={formData.jobStartTime}
-                  onChange={(e) =>
-                    handleInputChange("jobStartTime", e.target.value)
-                  }
-                />
-              </div>
-
-              {/* Job End Time */}
-              <div className="space-y-2">
-                <Label htmlFor="jobEndTime">Job End Time (Optional)</Label>
-                <Input
-                  id="jobEndTime"
-                  type="time"
-                  value={formData.jobEndTime}
-                  onChange={(e) =>
-                    handleInputChange("jobEndTime", e.target.value)
-                  }
-                />
-              </div>
             </div>
+          </form>
+          */}
 
-            {/* Workflow Actions */}
-            <div className="pt-4 border-t border-gray-200">
-              <h4 className="text-sm font-semibold text-toyota-black mb-3">
-                Workflow Actions
-              </h4>
-              <div className="flex flex-wrap gap-2">
-                {bookingUtils.getNextActions(booking.status).map((action) => (
-                  <Button
-                    key={action}
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      if (action === "Assign to Bay") {
-                        handleAssignToBay();
-                      } else if (action === "Move to Next Job") {
-                        handleAssignToNextJob();
-                      } else if (action === "Start Job") {
-                        startJob();
-                      } else if (action === "Pause Job") {
-                        handlePauseJob();
-                      } else if (action === "Complete Job") {
-                        handleCompleteJob();
-                      } else if (action === "Resume Job") {
-                        handleResumeJob();
-                      } else {
-                        // Handle other workflow actions
-                        console.log(
-                          `Executing: ${action} for booking ${booking.id}`,
-                        );
-                        onClose();
-                      }
-                    }}
-                    disabled={isLoading}
-                    className={
-                      action === "Complete Job"
-                        ? "bg-green-100 text-green-800 hover:bg-green-200 border-green-300"
-                        : action === "Pause Job"
-                          ? "bg-red-100 text-red-800 hover:bg-red-200 border-red-300"
-                          : action === "Resume Job"
-                            ? "bg-blue-100 text-blue-800 hover:bg-blue-200 border-blue-300"
-                            : action === "Assign to Bay"
-                              ? "bg-toyota-red text-white hover:bg-toyota-red-dark border-toyota-red"
-                              : "bg-gray-100 text-gray-800 hover:bg-gray-200 border-gray-300"
-                    }
-                  >
-                    {isLoading && action === "Assign to Bay" ? (
-                      <>
-                        <svg
-                          className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
-                          xmlns="http://www.w3.org/2000/svg"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                        >
-                          <circle
-                            className="opacity-25"
-                            cx="12"
-                            cy="12"
-                            r="10"
-                            stroke="currentColor"
-                            strokeWidth="4"
-                          ></circle>
-                          <path
-                            className="opacity-75"
-                            fill="currentColor"
-                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                          ></path>
-                        </svg>
-                        Assigning...
-                      </>
-                    ) : (
-                      action
-                    )}
-                  </Button>
-                ))}
-                {bookingUtils.getNextActions(booking.status).length === 0 && (
-                  <span className="text-sm text-gray-500">
-                    No actions available
-                  </span>
-                )}
-              </div>
-
-              {/* View History Button */}
-              <div className="mt-3 pt-3 border-t border-gray-100">
+          {/* Workflow Actions */}
+          <div className="pt-4 border-t border-gray-200">
+            <h4 className="text-sm font-semibold text-toyota-black mb-3">
+              Workflow Actions
+            </h4>
+            <div className="flex flex-wrap gap-2">
+              {bookingUtils.getNextActions(booking.status).map((action) => (
                 <Button
+                  key={action}
                   type="button"
                   variant="outline"
                   size="sm"
                   onClick={() => {
-                    onViewHistory(booking);
-                    onClose();
+                    if (action === "Assign to Bay") {
+                      handleAssignToBay();
+                    } else if (action === "Move to Next Job") {
+                      handleAssignToNextJob();
+                    } else if (action === "Start Job") {
+                      startJob();
+                    } else if (action === "Pause Job") {
+                      handlePauseJob();
+                    } else if (action === "Complete Job") {
+                      handleCompleteJob();
+                    } else if (action === "Resume Job") {
+                      handleResumeJob();
+                    } else {
+                      // Handle other workflow actions
+                      console.log(
+                        `Executing: ${action} for booking ${booking.id}`
+                      );
+                      onClose();
+                    }
                   }}
-                  className="w-full text-toyota-red border-toyota-red hover:bg-toyota-red hover:text-white"
+                  disabled={isLoading}
+                  className={
+                    action === "Complete Job"
+                      ? "bg-green-100 text-green-800 hover:bg-green-200 border-green-300"
+                      : action === "Pause Job"
+                      ? "bg-red-100 text-red-800 hover:bg-red-200 border-red-300"
+                      : action === "Resume Job"
+                      ? "bg-blue-100 text-blue-800 hover:bg-blue-200 border-blue-300"
+                      : action === "Assign to Bay"
+                      ? "bg-toyota-red text-white hover:bg-toyota-red-dark border-toyota-red"
+                      : "bg-gray-100 text-gray-800 hover:bg-gray-200 border-gray-300"
+                  }
                 >
-                  📋 View Process History
+                  {isLoading && action === "Assign to Bay" ? (
+                    <>
+                      <svg
+                        className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        ></circle>
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        ></path>
+                      </svg>
+                      Assigning...
+                    </>
+                  ) : (
+                    action
+                  )}
                 </Button>
-              </div>
+              ))}
+              {bookingUtils.getNextActions(booking.status).length === 0 && (
+                <span className="text-sm text-gray-500">
+                  No actions available
+                </span>
+              )}
             </div>
-          </form>
+
+            {/* View History Button */}
+            <div className="mt-3 pt-3 border-t border-gray-100">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  onViewHistory(booking);
+                  onClose();
+                }}
+                className="w-full text-toyota-red border-toyota-red hover:bg-toyota-red hover:text-white"
+              >
+                📋 View Process History
+              </Button>
+            </div>
+          </div>
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={handleClose}>
-              Cancel
+              Close
             </Button>
+            {/* COMMENTED OUT - Update button for future use */}
+            {/*
             <Button
               type="submit"
               form="edit-booking-form"
@@ -783,6 +794,7 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
                 "Update Booking"
               )}
             </Button>
+            */}
           </DialogFooter>
         </DialogContent>
       </Dialog>

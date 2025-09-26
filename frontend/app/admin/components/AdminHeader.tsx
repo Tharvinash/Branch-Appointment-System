@@ -27,8 +27,8 @@ export default function AdminHeader({ user, onLogout }: AdminHeaderProps) {
     <header className="bg-toyota-black text-toyota-white py-6">
       <div className="container mx-auto px-6">
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <div className="h-12">
+          <div className="flex items-center space-x-4 pr-4">
+            <div className="h-11">
               <img
                 src="/Toyota_carlogo.svg"
                 alt="Toyota Logo"
@@ -41,7 +41,7 @@ export default function AdminHeader({ user, onLogout }: AdminHeaderProps) {
           <nav className="hidden md:flex space-x-3">
             <Link
               href="/admin"
-              className={`px-4 py-2 rounded-lg transition-all duration-200 ease-in-out ${
+              className={`px-4 py-2 rounded-lg transition-all duration-200 ease-in-out flex items-center text-center ${
                 isActive("/admin")
                   ? "bg-toyota-red text-toyota-white shadow-md"
                   : "hover:text-toyota-red hover:bg-gray-800/50"
@@ -51,7 +51,7 @@ export default function AdminHeader({ user, onLogout }: AdminHeaderProps) {
             </Link>
             <Link
               href="/admin/bays"
-              className={`px-2 py-2 rounded-lg transition-all duration-200 ease-in-out ${
+              className={`px-2 py-2 rounded-lg transition-all duration-200 ease-in-out flex items-center text-center ${
                 isActive("/admin/bays")
                   ? "bg-toyota-red text-toyota-white shadow-md"
                   : "hover:text-toyota-red hover:bg-gray-800/50"
@@ -61,7 +61,7 @@ export default function AdminHeader({ user, onLogout }: AdminHeaderProps) {
             </Link>
             <Link
               href="/admin/technicians"
-              className={`px-2 py-2 rounded-lg transition-all duration-200 ease-in-out ${
+              className={`px-2 py-2 rounded-lg transition-all duration-200 ease-in-out flex items-center text-center ${
                 isActive("/admin/technicians")
                   ? "bg-toyota-red text-toyota-white shadow-md"
                   : "hover:text-toyota-red hover:bg-gray-800/50"
@@ -71,7 +71,7 @@ export default function AdminHeader({ user, onLogout }: AdminHeaderProps) {
             </Link>
             <Link
               href="/admin/service-advisors"
-              className={`px-2 py-2 rounded-lg transition-all duration-200 ease-in-out ${
+              className={`px-2 py-2 rounded-lg transition-all duration-200 ease-in-out flex items-center text-center ${
                 isActive("/admin/service-advisors")
                   ? "bg-toyota-red text-toyota-white shadow-md"
                   : "hover:text-toyota-red hover:bg-gray-800/50"
