@@ -83,23 +83,27 @@ export default function LoginPage() {
       <div className="w-full max-w-md space-y-8 relative z-10">
         {/* Header */}
         <div className="text-center">
-          {/* <div className="mx-auto h-20 w-20 bg-gradient-to-br from-toyota-red to-red-600 rounded-full flex items-center justify-center shadow-2xl border-4 border-toyota-white">
-            <span className="text-toyota-white text-3xl font-bold">T</span>
-          </div> */}
-          <h2 className="mt-6 text-4xl font-bold text-toyota-white">
+          <div className="mx-auto h-20 w-20 flex items-center justify-center">
+            <img
+              src="/toyota-logo.svg"
+              alt="Toyota Logo"
+              className="h-full w-full filter brightness-0 invert"
+            />
+          </div>
+          <h2 className="mt-2 text-4xl font-bold text-white">
             Sign in to your account
           </h2>
           <p className="mt-2 text-sm text-gray-300">
-            Welcome back to the racing experience
+            Welcome back to the service management system
           </p>
         </div>
 
         {/* Form */}
-        <div className="bg-black/80 backdrop-blur-sm border-2 border-toyota-red rounded-2xl p-8 shadow-2xl">
+        <div className="bg-white border border-gray-200 rounded-2xl p-8 shadow-xl">
           <form className="space-y-6" onSubmit={handleSubmit}>
             {/* API Error Alert */}
             {apiError && (
-              <div className="bg-red-900/50 border-2 border-red-500 text-red-200 px-4 py-3 rounded-lg backdrop-blur-sm">
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
                 <div className="flex">
                   <div className="flex-shrink-0">
                     <svg
@@ -125,7 +129,7 @@ export default function LoginPage() {
             <div>
               <label
                 htmlFor="email"
-                className="block text-sm font-medium text-toyota-white mb-2"
+                className="block text-sm font-medium text-gray-700 mb-2"
               >
                 Email address
               </label>
@@ -137,13 +141,13 @@ export default function LoginPage() {
                 required
                 value={formData.email}
                 onChange={handleInputChange}
-                className={`w-full px-4 py-3 bg-black/50 border-2 rounded-lg shadow-sm placeholder-gray-400 text-white focus:outline-none focus:ring-2 focus:ring-toyota-red focus:border-toyota-red transition-all duration-300 ${
-                  errors.email ? "border-red-500" : "border-gray-600"
+                className={`w-full px-4 py-3 bg-white border-2 rounded-lg shadow-sm placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-toyota-red focus:border-toyota-red transition-all duration-300 ${
+                  errors.email ? "border-red-500" : "border-gray-300"
                 }`}
                 placeholder="Enter your email"
               />
               {errors.email && (
-                <p className="mt-1 text-sm text-red-400">{errors.email}</p>
+                <p className="mt-1 text-sm text-red-500">{errors.email}</p>
               )}
             </div>
 
@@ -151,7 +155,7 @@ export default function LoginPage() {
             <div>
               <label
                 htmlFor="password"
-                className="block text-sm font-medium text-toyota-white mb-2"
+                className="block text-sm font-medium text-gray-700 mb-2"
               >
                 Password
               </label>
@@ -163,13 +167,13 @@ export default function LoginPage() {
                 required
                 value={formData.password}
                 onChange={handleInputChange}
-                className={`w-full px-4 py-3 bg-black/50 border-2 rounded-lg shadow-sm placeholder-gray-400 text-white focus:outline-none focus:ring-2 focus:ring-toyota-red focus:border-toyota-red transition-all duration-300 ${
-                  errors.password ? "border-red-500" : "border-gray-600"
+                className={`w-full px-4 py-3 bg-white border-2 rounded-lg shadow-sm placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-toyota-red focus:border-toyota-red transition-all duration-300 ${
+                  errors.password ? "border-red-500" : "border-gray-300"
                 }`}
                 placeholder="Enter your password"
               />
               {errors.password && (
-                <p className="mt-1 text-sm text-red-400">{errors.password}</p>
+                <p className="mt-1 text-sm text-red-500">{errors.password}</p>
               )}
             </div>
 
@@ -180,11 +184,11 @@ export default function LoginPage() {
                   id="remember-me"
                   name="remember-me"
                   type="checkbox"
-                  className="h-4 w-4 text-toyota-red focus:ring-toyota-red border-gray-600 bg-black/50 rounded"
+                  className="h-4 w-4 text-toyota-red focus:ring-toyota-red border-gray-300 bg-white rounded"
                 />
                 <label
                   htmlFor="remember-me"
-                  className="ml-2 block text-sm text-gray-300"
+                  className="ml-2 block text-sm text-gray-600"
                 >
                   Remember me
                 </label>
@@ -193,7 +197,7 @@ export default function LoginPage() {
               <div className="text-sm">
                 <a
                   href="#"
-                  className="font-medium text-toyota-red hover:text-red-400 transition-colors"
+                  className="font-medium text-toyota-red hover:text-red-600 transition-colors"
                 >
                   Forgot your password?
                 </a>
@@ -239,11 +243,11 @@ export default function LoginPage() {
 
             {/* Register Link */}
             <div className="text-center">
-              <p className="text-sm text-gray-300">
+              <p className="text-sm text-gray-600">
                 Don't have an account?{" "}
                 <Link
                   href="/register"
-                  className="font-medium text-toyota-red hover:text-red-400 transition-colors"
+                  className="font-medium text-toyota-red hover:text-red-600 transition-colors"
                 >
                   Sign up here
                 </Link>
@@ -254,7 +258,7 @@ export default function LoginPage() {
 
         {/* Footer */}
         <div className="text-center">
-          <p className="text-xs text-gray-400">
+          <p className="text-xs text-gray-300">
             © 2025 Service Management System
           </p>
         </div>
