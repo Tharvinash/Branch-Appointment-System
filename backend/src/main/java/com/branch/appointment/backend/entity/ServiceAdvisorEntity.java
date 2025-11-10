@@ -26,5 +26,9 @@ public class ServiceAdvisorEntity {
   @Enumerated(EnumType.STRING)
   @Column(name = "SA_Status", nullable = false)
   private ServiceAdvisorStatusEnum status;
+
+  @ManyToOne
+  @JoinColumn(name = "Reason_Id", nullable = true)
+  private ReasonEntity reason;
 }
 

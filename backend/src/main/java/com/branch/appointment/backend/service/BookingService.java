@@ -18,6 +18,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @AllArgsConstructor
@@ -198,14 +199,42 @@ public class BookingService {
   private BayDto mapBayToDto(BayEntity entity) {
     if (entity == null) return null;
 
+    TechnicianDto technicianDto = null;
+    if (entity.getTechnician() != null) {
+      ReasonDto reasonDto = null;
+      if (entity.getTechnician().getReason() != null) {
+        reasonDto = ReasonDto.builder()
+            .id(entity.getTechnician().getReason().getId())
+            .reason(entity.getTechnician().getReason().getReason())
+            .build();
+      }
+      
+      // Map job skills
+      List<BayNameDto> jobSkills = null;
+      if (entity.getTechnician().getJobSkills() != null && !entity.getTechnician().getJobSkills().isEmpty()) {
+        jobSkills = entity.getTechnician().getJobSkills().stream()
+            .map(bayName -> BayNameDto.builder()
+                .id(bayName.getId())
+                .name(bayName.getBayName())
+                .build())
+            .collect(Collectors.toList());
+      }
+      
+      technicianDto = TechnicianDto.builder()
+          .id(entity.getTechnician().getId())
+          .name(entity.getTechnician().getName())
+          .status(entity.getTechnician().getStatus())
+          .reason(reasonDto)
+          .jobSkills(jobSkills)
+          .build();
+    }
+
     return BayDto.builder()
         .id(entity.getId())
         .name(mapBayNameToDto(entity.getBayName())) // ✅ now returns BayNameDto
         .number(entity.getBayNumber())
         .status(entity.getStatus())
-        .technician(entity.getTechnician() != null
-            ? new TechnicianDto(entity.getTechnician().getId(), entity.getTechnician().getName(), entity.getTechnician().getStatus())
-            : null)
+        .technician(technicianDto)
         .build();
   }
 

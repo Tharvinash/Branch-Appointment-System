@@ -7,6 +7,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.HashSet;
+import java.util.Set;
+
 @Entity
 @Getter
 @Setter
@@ -26,4 +29,16 @@ public class TechnicianEntity {
   @Column(name = "Category_Status")
   @Enumerated(EnumType.STRING)
   private TechnicianStatusEnum status;
+
+  @ManyToOne
+  @JoinColumn(name = "Reason_Id", nullable = true)
+  private ReasonEntity reason;
+
+  @ManyToMany(fetch = FetchType.EAGER)
+  @JoinTable(
+      name = "BAS_Technician_Job_Skills",
+      joinColumns = @JoinColumn(name = "Technician_Id"),
+      inverseJoinColumns = @JoinColumn(name = "Bay_Name_Id")
+  )
+  private Set<BayNameEntity> jobSkills = new HashSet<>();
 }
