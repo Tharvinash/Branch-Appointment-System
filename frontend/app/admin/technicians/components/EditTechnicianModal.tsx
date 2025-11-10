@@ -7,6 +7,8 @@ import {
   technicianAPI,
   technicianValidators,
 } from "@/lib/api/technicians";
+import { reasonAPI, Reason } from "@/lib/api/reasons";
+import { bayAPI, BayName } from "@/lib/api/bays";
 import {
   Dialog,
   DialogContent,
@@ -42,10 +44,52 @@ export default function EditTechnicianModal({
   const [formData, setFormData] = useState<UpdateTechnicianData>({
     name: "",
     status: "AVAILABLE",
+    reason: null,
+    jobSkills: [],
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [apiError, setApiError] = useState("");
+  const [reasons, setReasons] = useState<Reason[]>([]);
+  const [bayNames, setBayNames] = useState<BayName[]>([]);
+  const [isLoadingReasons, setIsLoadingReasons] = useState(false);
+  const [isLoadingBayNames, setIsLoadingBayNames] = useState(false);
+  const [selectedJobSkills, setSelectedJobSkills] = useState<number[]>([]);
+
+  // Fetch reasons and bay names when modal opens
+  useEffect(() => {
+    const fetchData = async () => {
+      if (open) {
+        // Fetch reasons
+        setIsLoadingReasons(true);
+        try {
+          const reasonsResponse = await reasonAPI.getAllReasons();
+          if (reasonsResponse.success && reasonsResponse.data) {
+            setReasons(reasonsResponse.data);
+          }
+        } catch (error) {
+          console.error("Error fetching reasons:", error);
+        } finally {
+          setIsLoadingReasons(false);
+        }
+
+        // Fetch bay names for job skills
+        setIsLoadingBayNames(true);
+        try {
+          const bayNamesResponse = await bayAPI.getBayNames();
+          if (bayNamesResponse.success && bayNamesResponse.data) {
+            setBayNames(bayNamesResponse.data);
+          }
+        } catch (error) {
+          console.error("Error fetching bay names:", error);
+        } finally {
+          setIsLoadingBayNames(false);
+        }
+      }
+    };
+
+    fetchData();
+  }, [open]);
 
   // Update form data when technician changes
   useEffect(() => {
@@ -53,7 +97,16 @@ export default function EditTechnicianModal({
       setFormData({
         name: technician.name,
         status: technician.status,
+        reason: technician.reason ? { id: technician.reason.id } : null,
+        jobSkills: technician.jobSkills
+          ? technician.jobSkills.map((skill) => ({ id: skill.id }))
+          : [],
       });
+      setSelectedJobSkills(
+        technician.jobSkills
+          ? technician.jobSkills.map((skill) => skill.id)
+          : []
+      );
     }
   }, [technician]);
 
@@ -68,6 +121,55 @@ export default function EditTechnicianModal({
       setErrors((prev) => ({ ...prev, [name]: "" }));
     }
     if (apiError) setApiError("");
+  };
+
+  const handleStatusChange = (value: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      status: value as "AVAILABLE" | "ON_LEAVE",
+      reason: value === "AVAILABLE" ? null : prev.reason,
+    }));
+    if (errors.status) {
+      setErrors((prev) => ({ ...prev, status: "" }));
+    }
+    if (apiError) setApiError("");
+  };
+
+  const handleReasonChange = (reasonId: string) => {
+    if (reasonId) {
+      setFormData((prev) => ({
+        ...prev,
+        reason: { id: parseInt(reasonId) },
+      }));
+    } else {
+      setFormData((prev) => ({ ...prev, reason: null }));
+    }
+    if (errors.reason) {
+      setErrors((prev) => ({ ...prev, reason: "" }));
+    }
+  };
+
+  const handleJobSkillToggle = (bayNameId: number) => {
+    setSelectedJobSkills((prev) => {
+      if (prev.includes(bayNameId)) {
+        const updated = prev.filter((id) => id !== bayNameId);
+        setFormData((prevData) => ({
+          ...prevData,
+          jobSkills: updated.map((id) => ({ id })),
+        }));
+        return updated;
+      } else {
+        const updated = [...prev, bayNameId];
+        setFormData((prevData) => ({
+          ...prevData,
+          jobSkills: updated.map((id) => ({ id })),
+        }));
+        return updated;
+      }
+    });
+    if (errors.jobSkills) {
+      setErrors((prev) => ({ ...prev, jobSkills: "" }));
+    }
   };
 
   const validateForm = (): boolean => {
@@ -92,9 +194,19 @@ export default function EditTechnicianModal({
     setApiError("");
 
     try {
+      // Prepare data for API
+      const submitData: UpdateTechnicianData = {
+        name: formData.name,
+        status: formData.status,
+        reason: formData.status === "ON_LEAVE" ? formData.reason : null,
+        jobSkills: selectedJobSkills.length > 0
+          ? selectedJobSkills.map((id) => ({ id }))
+          : [],
+      };
+
       const response = await technicianAPI.updateTechnician(
         technician.id,
-        formData,
+        submitData,
       );
 
       if (response.success) {
@@ -120,11 +232,11 @@ export default function EditTechnicianModal({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Edit Technician</DialogTitle>
           <DialogDescription>
-            Update technician information and status.
+            Update technician information, status, reason, and job skills.
           </DialogDescription>
         </DialogHeader>
 
@@ -196,15 +308,7 @@ export default function EditTechnicianModal({
             <Label htmlFor="status">
               Technician Status <span className="text-red-500">*</span>
             </Label>
-            <Select
-              value={formData.status}
-              onValueChange={(value) => {
-                const event = {
-                  target: { name: "status", value },
-                } as React.ChangeEvent<HTMLSelectElement>;
-                handleInputChange(event);
-              }}
-            >
+            <Select value={formData.status} onValueChange={handleStatusChange}>
               <SelectTrigger className={errors.status ? "border-red-500" : ""}>
                 <SelectValue />
               </SelectTrigger>
@@ -215,6 +319,82 @@ export default function EditTechnicianModal({
             </Select>
             {errors.status && (
               <p className="text-sm text-red-600">{errors.status}</p>
+            )}
+          </div>
+
+          {/* Reason Field - Only shown when status is ON_LEAVE */}
+          {formData.status === "ON_LEAVE" && (
+            <div className="space-y-2">
+              <Label htmlFor="reason">
+                Reason for Leave <span className="text-gray-500">(Optional)</span>
+              </Label>
+              <Select
+                value={formData.reason?.id.toString() || ""}
+                onValueChange={handleReasonChange}
+              >
+                <SelectTrigger
+                  className={errors.reason ? "border-red-500" : ""}
+                  disabled={isLoadingReasons}
+                >
+                  <SelectValue
+                    placeholder={
+                      isLoadingReasons
+                        ? "Loading reasons..."
+                        : "Select reason (optional)"
+                    }
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">None</SelectItem>
+                  {reasons.map((reason) => (
+                    <SelectItem key={reason.id} value={reason.id.toString()}>
+                      {reason.reason}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.reason && (
+                <p className="text-sm text-red-600">{errors.reason}</p>
+              )}
+            </div>
+          )}
+
+          {/* Job Skills Field */}
+          <div className="space-y-2">
+            <Label>
+              Job Skills <span className="text-gray-500">(Optional)</span>
+            </Label>
+            <div className="border rounded-md p-3 max-h-48 overflow-y-auto">
+              {isLoadingBayNames ? (
+                <p className="text-sm text-gray-500">Loading bay names...</p>
+              ) : bayNames.length === 0 ? (
+                <p className="text-sm text-gray-500">No bay names available</p>
+              ) : (
+                <div className="space-y-2">
+                  {bayNames.map((bayName) => (
+                    <label
+                      key={bayName.id}
+                      className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-2 rounded"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedJobSkills.includes(bayName.id)}
+                        onChange={() => handleJobSkillToggle(bayName.id)}
+                        className="rounded border-gray-300 text-toyota-red focus:ring-toyota-red"
+                      />
+                      <span className="text-sm">{bayName.name}</span>
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+            {errors.jobSkills && (
+              <p className="text-sm text-red-600">{errors.jobSkills}</p>
+            )}
+            {selectedJobSkills.length > 0 && (
+              <p className="text-xs text-gray-500">
+                {selectedJobSkills.length} skill(s) selected
+              </p>
             )}
           </div>
         </form>

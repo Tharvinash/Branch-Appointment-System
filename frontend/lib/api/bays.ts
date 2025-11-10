@@ -3,10 +3,17 @@
 import { tokenManager } from "@/lib/auth";
 
 // Import Technician interface
+export interface Reason {
+  id: number;
+  reason: string;
+}
+
 export interface Technician {
   id: number;
   name: string;
   status: "AVAILABLE" | "ON_LEAVE";
+  reason?: Reason | null;
+  jobSkills?: BayName[] | null;
 }
 
 export interface Bay {

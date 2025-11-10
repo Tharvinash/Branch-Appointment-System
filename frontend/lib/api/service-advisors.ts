@@ -10,20 +10,28 @@ const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080";
 
 // Types
+export interface Reason {
+  id: number;
+  reason: string;
+}
+
 export interface ServiceAdvisor {
   id: number;
   name: string;
   status: "AVAILABLE" | "ON_LEAVE";
+  reason?: Reason | null;
 }
 
 export interface CreateServiceAdvisorData {
   name: string;
   status: "AVAILABLE" | "ON_LEAVE";
+  reason?: { id: number } | null;
 }
 
 export interface UpdateServiceAdvisorData {
   name: string;
   status: "AVAILABLE" | "ON_LEAVE";
+  reason?: { id: number } | null;
 }
 
 export interface ApiResponse<T> {
