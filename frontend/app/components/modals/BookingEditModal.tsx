@@ -6,6 +6,7 @@ import {
   Booking,
   bookingAPI,
   bookingValidators,
+  TimeExtension,
 } from "@/lib/api/bookings";
 import { serviceAdvisorAPI, ServiceAdvisor } from "@/lib/api/service-advisors";
 import { bayAPI, Bay as BayType } from "@/lib/api/bays";
@@ -70,6 +71,25 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
   const [isLoadingAdvisors, setIsLoadingAdvisors] = useState(false);
   const [bays, setBays] = useState<BayType[]>([]);
   const [isLoadingBays, setIsLoadingBays] = useState(false);
+  const [isExtendTimeModalOpen, setIsExtendTimeModalOpen] = useState(false);
+  const [newEndTime, setNewEndTime] = useState("");
+  const [extendTimeReason, setExtendTimeReason] = useState("");
+  const [timeExtensions, setTimeExtensions] = useState<TimeExtension[]>([]);
+  const [isLoadingExtensions, setIsLoadingExtensions] = useState(false);
+  const [delayReason, setDelayReason] = useState("");
+  const [showDelayReasonInput, setShowDelayReasonInput] = useState(false);
+  const [extendTimeError, setExtendTimeError] = useState("");
+  const [isExtendingTime, setIsExtendingTime] = useState(false);
+  const [isChangeBayModalOpen, setIsChangeBayModalOpen] = useState(false);
+  const [changeBayForm, setChangeBayForm] = useState({
+    bayId: 0,
+    jobStartTime: "",
+    jobEndTime: "",
+  });
+  const [changeBayErrors, setChangeBayErrors] = useState<
+    Record<string, string>
+  >({});
+  const [isChangingBay, setIsChangingBay] = useState(false);
 
   // Fetch service advisors and bays on component mount
   useEffect(() => {
@@ -107,8 +127,28 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
 
     if (open) {
       fetchData();
+      // Fetch time extensions when modal opens
+      if (booking) {
+        fetchTimeExtensions();
+      }
     }
-  }, [open]);
+  }, [open, booking]);
+
+  // Fetch time extensions
+  const fetchTimeExtensions = async () => {
+    if (!booking) return;
+    setIsLoadingExtensions(true);
+    try {
+      const response = await bookingAPI.getTimeExtensions(booking.id);
+      if (response.success && response.data) {
+        setTimeExtensions(response.data);
+      }
+    } catch (error) {
+      console.error("Error fetching time extensions:", error);
+    } finally {
+      setIsLoadingExtensions(false);
+    }
+  };
 
   // Update form data when booking changes
   useEffect(() => {
@@ -232,16 +272,32 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
   const handleAssignToNextJob = async () => {
     if (!booking) return;
 
+    // Show delay reason input if job was extended and moving to next bay/process
+    if (timeExtensions.length > 0 && !delayReason.trim()) {
+      setShowDelayReasonInput(true);
+      setApiError(
+        "Please provide a reason for the delay before moving to next job."
+      );
+      return;
+    }
+
     setIsLoading(true);
     setApiError("");
 
     try {
+      // Update delay reason if provided
+      if (delayReason.trim()) {
+        await bookingAPI.updateDelayReason(booking.id, delayReason.trim());
+      }
+
       const response = await bookingAPI.workflow.moveToNextJob(
         booking.id,
         formData.bayId
       );
 
       if (response.success) {
+        setDelayReason("");
+        setShowDelayReasonInput(false);
         onSuccess();
       } else {
         setApiError(response.message || "Failed to move to next job");
@@ -264,16 +320,32 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
   const handleCompleteJob = async () => {
     if (!booking) return;
 
+    // Show delay reason input if job was extended
+    if (timeExtensions.length > 0 && !delayReason.trim()) {
+      setShowDelayReasonInput(true);
+      setApiError(
+        "Please provide a reason for the delay before completing the job."
+      );
+      return;
+    }
+
     setIsLoading(true);
     setApiError("");
 
     try {
+      // Update delay reason if provided
+      if (delayReason.trim()) {
+        await bookingAPI.updateDelayReason(booking.id, delayReason.trim());
+      }
+
       const response = await bookingAPI.workflow.completeJob(booking.id);
 
       if (response.success) {
+        setDelayReason("");
+        setShowDelayReasonInput(false);
         onSuccess();
       } else {
-        setApiError(response.message || "Failed to move to next job");
+        setApiError(response.message || "Failed to complete job");
       }
     } catch (error) {
       setApiError("An unexpected error occurred. Please try again.");
@@ -294,12 +366,75 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
       if (response.success) {
         onSuccess();
       } else {
-        setApiError(response.message || "Failed to move to next job");
+        setApiError(response.message || "Failed to resume job");
       }
     } catch (error) {
       setApiError("An unexpected error occurred. Please try again.");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleExtendTime = async () => {
+    if (!booking || !newEndTime) {
+      setExtendTimeError("Please select a new end time");
+      return;
+    }
+
+    // Validate that reason is provided
+    if (!extendTimeReason.trim()) {
+      setExtendTimeError("Please provide a reason for extending the time");
+      return;
+    }
+
+    // Validate that new end time is after current end time
+    if (booking.jobEndTime) {
+      const currentTime = booking.jobEndTime.slice(0, 5); // HH:mm
+      const [currentHour, currentMin] = currentTime.split(":").map(Number);
+      const [newHour, newMin] = newEndTime.split(":").map(Number);
+
+      const currentMinutes = currentHour * 60 + currentMin;
+      const newMinutes = newHour * 60 + newMin;
+
+      if (newMinutes <= currentMinutes) {
+        setExtendTimeError("New end time must be after the current end time");
+        return;
+      }
+    }
+
+    setIsExtendingTime(true);
+    setExtendTimeError("");
+
+    try {
+      // Format time to HH:mm:ss
+      const timeParts = newEndTime.split(":");
+      const formattedTime = `${timeParts[0]}:${timeParts[1]}:00`;
+
+      const response = await bookingAPI.extendTime(
+        booking.id,
+        formattedTime,
+        "Job Controller",
+        extendTimeReason.trim()
+      );
+
+      if (response.success && response.data) {
+        setNewEndTime("");
+        setExtendTimeReason("");
+        setExtendTimeError("");
+        setIsExtendTimeModalOpen(false);
+        await fetchTimeExtensions();
+        onSuccess(); // Refresh booking data
+      } else {
+        setExtendTimeError(response.message || "Failed to extend time");
+      }
+    } catch (error) {
+      setExtendTimeError(
+        error instanceof Error
+          ? error.message
+          : "An unexpected error occurred. Please try again."
+      );
+    } finally {
+      setIsExtendingTime(false);
     }
   };
 
@@ -325,6 +460,86 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
       setApiError("An unexpected error occurred. Please try again.");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleChangeBay = async () => {
+    if (!booking) return;
+
+    // Validate form
+    const errors: Record<string, string> = {};
+    if (!changeBayForm.bayId || changeBayForm.bayId === 0) {
+      errors.bayId = "Please select a bay";
+    }
+    if (!changeBayForm.jobStartTime) {
+      errors.jobStartTime = "Please select a start time";
+    }
+    if (!changeBayForm.jobEndTime) {
+      errors.jobEndTime = "Please select an end time";
+    }
+
+    // Validate that end time is after start time
+    if (changeBayForm.jobStartTime && changeBayForm.jobEndTime) {
+      const [startHour, startMin] = changeBayForm.jobStartTime
+        .split(":")
+        .map(Number);
+      const [endHour, endMin] = changeBayForm.jobEndTime.split(":").map(Number);
+      const startMinutes = startHour * 60 + startMin;
+      const endMinutes = endHour * 60 + endMin;
+
+      if (endMinutes <= startMinutes) {
+        errors.jobEndTime = "End time must be after start time";
+      }
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setChangeBayErrors(errors);
+      return;
+    }
+
+    setIsChangingBay(true);
+    setChangeBayErrors({});
+
+    try {
+      // Format times to HH:mm:ss
+      const startTimeParts = changeBayForm.jobStartTime.split(":");
+      const endTimeParts = changeBayForm.jobEndTime.split(":");
+      const formattedStartTime = `${startTimeParts[0]}:${startTimeParts[1]}:00`;
+      const formattedEndTime = `${endTimeParts[0]}:${endTimeParts[1]}:00`;
+
+      // Get current booking data
+      const currentBooking = await bookingAPI.getBooking(booking.id);
+      if (!currentBooking.success || !currentBooking.data) {
+        setChangeBayErrors({ general: "Failed to fetch current booking data" });
+        return;
+      }
+
+      // Update booking with new bay and times
+      const updateData = {
+        ...currentBooking.data,
+        bayId: changeBayForm.bayId,
+        jobStartTime: formattedStartTime,
+        jobEndTime: formattedEndTime,
+      };
+
+      const response = await bookingAPI.updateBooking(booking.id, updateData);
+
+      if (response.success) {
+        setIsChangeBayModalOpen(false);
+        setChangeBayForm({ bayId: 0, jobStartTime: "", jobEndTime: "" });
+        setChangeBayErrors({});
+        onSuccess(); // Refresh booking data
+      } else {
+        setChangeBayErrors({
+          general: response.message || "Failed to change bay",
+        });
+      }
+    } catch (error) {
+      setChangeBayErrors({
+        general: "An unexpected error occurred. Please try again.",
+      });
+    } finally {
+      setIsChangingBay(false);
     }
   };
 
@@ -655,12 +870,141 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
           </form>
           */}
 
+          {/* Time Extension Section - Show for ACTIVE_BOARD status */}
+          {booking.status === "ACTIVE_BOARD" && booking.jobEndTime && (
+            <div className="pt-4 border-t border-gray-200">
+              <h4 className="text-sm font-semibold text-toyota-black mb-3">
+                Time Management
+              </h4>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                  <div>
+                    <div className="text-xs text-gray-600">
+                      Current End Time
+                    </div>
+                    <div className="text-sm font-semibold text-gray-900">
+                      {booking.jobEndTime.slice(0, 5)}
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsExtendTimeModalOpen(true)}
+                    className="bg-blue-100 text-blue-800 hover:bg-blue-200 border-blue-300"
+                  >
+                    ⏰ Extend Time
+                  </Button>
+                </div>
+
+                {/* Time Extensions History */}
+                {timeExtensions.length > 0 && (
+                  <div className="space-y-2">
+                    <div className="text-xs font-medium text-gray-700">
+                      Extension History:
+                    </div>
+                    <div className="max-h-32 overflow-y-auto space-y-1">
+                      {timeExtensions.map((ext) => (
+                        <div
+                          key={ext.id}
+                          className="text-xs p-2 bg-gray-50 rounded border border-gray-200"
+                        >
+                          <div className="flex justify-between mb-1">
+                            <span className="text-gray-600 font-medium">
+                              {ext.previousEndTime.slice(0, 5)} →{" "}
+                              {ext.newEndTime.slice(0, 5)}
+                            </span>
+                            <span className="text-gray-500 text-xs">
+                              {new Date(ext.extendedAt).toLocaleString()}
+                            </span>
+                          </div>
+                          {ext.reason && (
+                            <div className="text-gray-700 mt-1 italic">
+                              Reason: {ext.reason}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Delay Reason Input - Show when completing job with extensions */}
+          {showDelayReasonInput && (
+            <div className="pt-4 border-t border-gray-200">
+              <h4 className="text-sm font-semibold text-toyota-black mb-3">
+                Delay Reason Required
+              </h4>
+              <div className="space-y-2">
+                <Label htmlFor="delayReason">
+                  Please provide a reason for the delay{" "}
+                  <span className="text-red-500">*</span>
+                </Label>
+                <textarea
+                  id="delayReason"
+                  value={delayReason}
+                  onChange={(e) => setDelayReason(e.target.value)}
+                  className="w-full p-2 border border-gray-300 rounded-md text-sm min-h-[80px]"
+                  placeholder="Enter reason for delay..."
+                />
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={handleCompleteJob}
+                    disabled={!delayReason.trim() || isLoading}
+                    className="bg-green-600 hover:bg-green-700 text-white"
+                  >
+                    Complete with Reason
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setShowDelayReasonInput(false);
+                      setDelayReason("");
+                      setApiError("");
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Workflow Actions */}
           <div className="pt-4 border-t border-gray-200">
             <h4 className="text-sm font-semibold text-toyota-black mb-3">
               Workflow Actions
             </h4>
             <div className="flex flex-wrap gap-2">
+              {/* Change Bay button - Show for ACTIVE_BOARD status */}
+              {booking.status === "ACTIVE_BOARD" && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    // Initialize form with current booking data
+                    setChangeBayForm({
+                      bayId: booking.bayId || 0,
+                      jobStartTime: booking.jobStartTime?.slice(0, 5) || "",
+                      jobEndTime: booking.jobEndTime?.slice(0, 5) || "",
+                    });
+                    setChangeBayErrors({});
+                    setIsChangeBayModalOpen(true);
+                  }}
+                  disabled={isLoading}
+                  className="bg-orange-100 text-orange-800 hover:bg-orange-200 border-orange-300"
+                >
+                  Change Bay
+                </Button>
+              )}
               {bookingUtils.getNextActions(booking.status).map((action) => (
                 <Button
                   key={action}
@@ -677,7 +1021,12 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
                     } else if (action === "Pause Job") {
                       handlePauseJob();
                     } else if (action === "Complete Job") {
-                      handleCompleteJob();
+                      // Check if time was extended, show delay reason input
+                      if (timeExtensions.length > 0) {
+                        setShowDelayReasonInput(true);
+                      } else {
+                        handleCompleteJob();
+                      }
                     } else if (action === "Resume Job") {
                       handleResumeJob();
                     } else {
@@ -795,6 +1144,317 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
               )}
             </Button>
             */}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Extend Time Modal */}
+      <Dialog
+        open={isExtendTimeModalOpen}
+        onOpenChange={(open) => {
+          setIsExtendTimeModalOpen(open);
+          if (!open) {
+            // Reset state when modal closes
+            setNewEndTime("");
+            setExtendTimeReason("");
+            setExtendTimeError("");
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Extend Job End Time</DialogTitle>
+            <DialogDescription>
+              Extend the end time for booking {booking?.carRegNo}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="newEndTime">
+                New End Time <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="newEndTime"
+                type="time"
+                value={newEndTime}
+                onChange={(e) => {
+                  setNewEndTime(e.target.value);
+                  setExtendTimeError(""); // Clear error when user types
+                }}
+                min={booking?.jobEndTime?.slice(0, 5) || "08:00"}
+                max="19:00"
+                disabled={isExtendingTime}
+              />
+              {booking?.jobEndTime && (
+                <p className="text-xs text-gray-500">
+                  Current end time: {booking.jobEndTime.slice(0, 5)}
+                </p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="extendTimeReason">
+                Reason for Extension <span className="text-red-500">*</span>
+              </Label>
+              <textarea
+                id="extendTimeReason"
+                value={extendTimeReason}
+                onChange={(e) => {
+                  setExtendTimeReason(e.target.value);
+                  setExtendTimeError(""); // Clear error when user types
+                }}
+                className="w-full p-2 border border-gray-300 rounded-md text-sm min-h-[80px] resize-y"
+                placeholder="Enter reason for extending the time..."
+                disabled={isExtendingTime}
+              />
+            </div>
+            {extendTimeError && (
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+                {extendTimeError}
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setIsExtendTimeModalOpen(false);
+                setNewEndTime("");
+                setExtendTimeReason("");
+                setExtendTimeError("");
+              }}
+              disabled={isExtendingTime}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={handleExtendTime}
+              disabled={
+                !newEndTime || !extendTimeReason.trim() || isExtendingTime
+              }
+              className="bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50"
+            >
+              {isExtendingTime ? (
+                <>
+                  <svg
+                    className="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </svg>
+                  Extending...
+                </>
+              ) : (
+                "Extend Time"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Change Bay Modal */}
+      <Dialog
+        open={isChangeBayModalOpen}
+        onOpenChange={(open) => {
+          setIsChangeBayModalOpen(open);
+          if (!open) {
+            // Reset state when modal closes
+            setChangeBayForm({ bayId: 0, jobStartTime: "", jobEndTime: "" });
+            setChangeBayErrors({});
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Change Bay</DialogTitle>
+            <DialogDescription>
+              Move booking {booking?.carRegNo} to a different bay with new time
+              slots
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {/* Bay Selection */}
+            <div className="space-y-2">
+              <Label htmlFor="changeBayId">
+                Bay Name <span className="text-red-500">*</span>
+              </Label>
+              <Select
+                value={changeBayForm.bayId.toString()}
+                onValueChange={(value) => {
+                  setChangeBayForm((prev) => ({
+                    ...prev,
+                    bayId: parseInt(value),
+                  }));
+                  if (changeBayErrors.bayId) {
+                    setChangeBayErrors((prev) => ({ ...prev, bayId: "" }));
+                  }
+                }}
+                disabled={isChangingBay || isLoadingBays}
+              >
+                <SelectTrigger
+                  className={changeBayErrors.bayId ? "border-red-500" : ""}
+                >
+                  <SelectValue
+                    placeholder={isLoadingBays ? "Loading..." : "Select Bay"}
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  {bays.map((bay) => (
+                    <SelectItem key={bay.id} value={bay.id.toString()}>
+                      {bay.name.name} (Bay {bay.number})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {changeBayErrors.bayId && (
+                <p className="text-red-500 text-xs">{changeBayErrors.bayId}</p>
+              )}
+            </div>
+
+            {/* Start Time */}
+            <div className="space-y-2">
+              <Label htmlFor="changeStartTime">
+                Start Time <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="changeStartTime"
+                type="time"
+                value={changeBayForm.jobStartTime}
+                onChange={(e) => {
+                  setChangeBayForm((prev) => ({
+                    ...prev,
+                    jobStartTime: e.target.value,
+                  }));
+                  if (changeBayErrors.jobStartTime) {
+                    setChangeBayErrors((prev) => ({
+                      ...prev,
+                      jobStartTime: "",
+                    }));
+                  }
+                }}
+                min="08:00"
+                max="19:00"
+                disabled={isChangingBay}
+                className={changeBayErrors.jobStartTime ? "border-red-500" : ""}
+              />
+              {changeBayErrors.jobStartTime && (
+                <p className="text-red-500 text-xs">
+                  {changeBayErrors.jobStartTime}
+                </p>
+              )}
+            </div>
+
+            {/* End Time */}
+            <div className="space-y-2">
+              <Label htmlFor="changeEndTime">
+                End Time <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="changeEndTime"
+                type="time"
+                value={changeBayForm.jobEndTime}
+                onChange={(e) => {
+                  setChangeBayForm((prev) => ({
+                    ...prev,
+                    jobEndTime: e.target.value,
+                  }));
+                  if (changeBayErrors.jobEndTime) {
+                    setChangeBayErrors((prev) => ({
+                      ...prev,
+                      jobEndTime: "",
+                    }));
+                  }
+                }}
+                min={changeBayForm.jobStartTime || "08:00"}
+                max="19:00"
+                disabled={isChangingBay}
+                className={changeBayErrors.jobEndTime ? "border-red-500" : ""}
+              />
+              {changeBayErrors.jobEndTime && (
+                <p className="text-red-500 text-xs">
+                  {changeBayErrors.jobEndTime}
+                </p>
+              )}
+            </div>
+
+            {/* General Error */}
+            {changeBayErrors.general && (
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+                {changeBayErrors.general}
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setIsChangeBayModalOpen(false);
+                setChangeBayForm({
+                  bayId: 0,
+                  jobStartTime: "",
+                  jobEndTime: "",
+                });
+                setChangeBayErrors({});
+              }}
+              disabled={isChangingBay}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={handleChangeBay}
+              disabled={
+                !changeBayForm.bayId ||
+                !changeBayForm.jobStartTime ||
+                !changeBayForm.jobEndTime ||
+                isChangingBay
+              }
+              className="bg-orange-600 hover:bg-orange-700 text-white disabled:opacity-50"
+            >
+              {isChangingBay ? (
+                <>
+                  <svg
+                    className="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </svg>
+                  Changing...
+                </>
+              ) : (
+                "Change Bay"
+              )}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

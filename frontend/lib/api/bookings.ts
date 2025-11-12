@@ -28,19 +28,36 @@ export interface ProcessStep {
   toStatus: string;
   fromProcess: {
     id: number;
-    name: string;
+    name: {
+      id: number;
+      name: string;
+    } | string; // Can be BayNameDto object or string (for backward compatibility)
     number: string;
     status: "ACTIVE" | "INACTIVE";
-  };
+  } | null;
   toProcess: {
     id: number;
-    name: string;
+    name: {
+      id: number;
+      name: string;
+    } | string; // Can be BayNameDto object or string (for backward compatibility)
     number: string;
     status: "ACTIVE" | "INACTIVE";
-  };
+  } | null;
   changedAt: string; // ISO string format
   jobStartTime?: string; // Time format HH:mm:ss
   jobEndTime?: string; // Time format HH:mm:ss
+  delayReason?: string;
+}
+
+export interface TimeExtension {
+  id: number;
+  bookingId: number;
+  previousEndTime: string; // Time format HH:mm:ss
+  newEndTime: string; // Time format HH:mm:ss
+  extendedAt: string; // ISO string format
+  extendedBy: string;
+  reason?: string; // Reason for extending the time
 }
 
 export interface ProcessHistoryResponse {
@@ -112,6 +129,12 @@ export interface BookingResponse {
 export interface BookingsResponse {
   success: boolean;
   data?: Booking[];
+  message?: string;
+}
+
+export interface ApiResponse<T> {
+  success: boolean;
+  data?: T;
   message?: string;
 }
 
@@ -271,6 +294,89 @@ export const bookingAPI = {
     }
   },
 
+  // Extend booking time
+  extendTime: async (
+    bookingId: number,
+    newEndTime: string,
+    extendedBy?: string,
+    reason?: string,
+  ): Promise<ApiResponse<TimeExtension>> => {
+    try {
+      const response = await apiCall<TimeExtension>(
+        `/bookings/${bookingId}/extend-time`,
+        {
+          newEndTime,
+          extendedBy: extendedBy || "System",
+          reason: reason || "",
+        },
+        "POST",
+      );
+      return {
+        success: true,
+        data: response,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message:
+          error instanceof Error
+            ? error.message
+            : "Failed to extend booking time",
+      };
+    }
+  },
+
+  // Get time extensions for a booking
+  getTimeExtensions: async (
+    bookingId: number,
+  ): Promise<ApiResponse<TimeExtension[]>> => {
+    try {
+      const response = await apiCall<TimeExtension[]>(
+        `/bookings/${bookingId}/time-extensions`,
+        {},
+        "GET",
+      );
+      return {
+        success: true,
+        data: response,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message:
+          error instanceof Error
+            ? error.message
+            : "Failed to fetch time extensions",
+        data: [],
+      };
+    }
+  },
+
+  // Update delay reason
+  updateDelayReason: async (
+    bookingId: number,
+    delayReason: string,
+  ): Promise<ApiResponse<void>> => {
+    try {
+      await apiCall<void>(
+        `/bookings/${bookingId}/delay-reason`,
+        { delayReason },
+        "POST",
+      );
+      return {
+        success: true,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message:
+          error instanceof Error
+            ? error.message
+            : "Failed to update delay reason",
+      };
+    }
+  },
+
   // Get stoppage reasons
   getStoppageReasons: async (): Promise<StoppageReasonsResponse> => {
     try {
@@ -296,7 +402,7 @@ export const bookingAPI = {
 
   // Workflow status transitions
   workflow: {
-    // QUEUING → BAY_QUEUE
+    // QUEUING → NEXT_JOB (directly when assigning to bay)
     assignToBay: async (
       bookingId: number,
       bayId: number,
@@ -311,10 +417,18 @@ export const bookingAPI = {
           };
         }
 
-        // Update the booking with new status and bayId
+        // Validate transition
+        if (currentBooking.data.status !== "QUEUING") {
+          return {
+            success: false,
+            message: `Invalid transition: Cannot assign to bay from ${currentBooking.data.status}. Current status must be QUEUING.`,
+          };
+        }
+
+        // Update the booking with new status (NEXT_JOB) and bayId
         const updateData: UpdateBookingRequest = {
           ...currentBooking.data,
-          status: "BAY_QUEUE",
+          status: "NEXT_JOB",
           bayId: bayId,
         };
 
@@ -341,6 +455,14 @@ export const bookingAPI = {
           return {
             success: false,
             message: "Failed to fetch current booking data",
+          };
+        }
+
+        // Validate transition
+        if (currentBooking.data.status !== "BAY_QUEUE") {
+          return {
+            success: false,
+            message: `Invalid transition: Cannot move to NEXT_JOB from ${currentBooking.data.status}. Current status must be BAY_QUEUE.`,
           };
         }
 
@@ -380,6 +502,22 @@ export const bookingAPI = {
           };
         }
 
+        // Validate transition
+        if (currentBooking.data.status !== "NEXT_JOB") {
+          return {
+            success: false,
+            message: `Invalid transition: Cannot start job from ${currentBooking.data.status}. Current status must be NEXT_JOB.`,
+          };
+        }
+
+        // Validate times
+        if (!jobStartTime || !jobEndTime) {
+          return {
+            success: false,
+            message: "Start time and end time are required to start a job",
+          };
+        }
+
         // Update the booking with new status and times
         const updateData: UpdateBookingRequest = {
           ...currentBooking.data,
@@ -414,6 +552,14 @@ export const bookingAPI = {
           };
         }
 
+        // Validate transition
+        if (currentBooking.data.status !== "ACTIVE_BOARD") {
+          return {
+            success: false,
+            message: `Invalid transition: Cannot pause job from ${currentBooking.data.status}. Current status must be ACTIVE_BOARD.`,
+          };
+        }
+
         // Update the booking with new status and stoppage reason
         const updateData: UpdateBookingRequest = {
           ...currentBooking.data,
@@ -444,6 +590,14 @@ export const bookingAPI = {
           };
         }
 
+        // Validate transition
+        if (currentBooking.data.status !== "JOB_STOPPAGE") {
+          return {
+            success: false,
+            message: `Invalid transition: Cannot resume job from ${currentBooking.data.status}. Current status must be JOB_STOPPAGE.`,
+          };
+        }
+
         // Update the booking with new status
         const updateData: UpdateBookingRequest = {
           ...currentBooking.data,
@@ -470,6 +624,14 @@ export const bookingAPI = {
           return {
             success: false,
             message: "Failed to fetch current booking data",
+          };
+        }
+
+        // Validate transition
+        if (currentBooking.data.status !== "ACTIVE_BOARD") {
+          return {
+            success: false,
+            message: `Invalid transition: Cannot complete job from ${currentBooking.data.status}. Current status must be ACTIVE_BOARD.`,
           };
         }
 
@@ -639,7 +801,7 @@ export const bookingUtils = {
     targetStatus: Booking["status"],
   ) => {
     const validTransitions: Record<Booking["status"], Booking["status"][]> = {
-      QUEUING: ["BAY_QUEUE"],
+      QUEUING: ["NEXT_JOB"], // Can go directly to NEXT_JOB when assigning to bay
       BAY_QUEUE: ["NEXT_JOB"],
       NEXT_JOB: ["ACTIVE_BOARD"],
       ACTIVE_BOARD: ["JOB_STOPPAGE", "REPAIR_COMPLETION"],

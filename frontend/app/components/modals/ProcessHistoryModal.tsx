@@ -90,8 +90,8 @@ const ProcessHistoryModal: React.FC<ProcessHistoryModalProps> = ({
                           step.toStatus === "REPAIR_COMPLETION"
                             ? "bg-green-500"
                             : step.toStatus === "ACTIVE_BOARD"
-                              ? "bg-blue-500"
-                              : "bg-yellow-500"
+                            ? "bg-blue-500"
+                            : "bg-yellow-500"
                         }`}
                       ></div>
                       <span className="font-medium text-toyota-black">
@@ -125,7 +125,9 @@ const ProcessHistoryModal: React.FC<ProcessHistoryModalProps> = ({
                       <div className="flex justify-between">
                         <span>From Process:</span>
                         <span className="font-medium">
-                          {step.fromProcess.name}
+                          {typeof step.fromProcess.name === "string"
+                            ? step.fromProcess.name
+                            : step.fromProcess.name?.name || "N/A"}
                         </span>
                       </div>
                     )}
@@ -133,7 +135,9 @@ const ProcessHistoryModal: React.FC<ProcessHistoryModalProps> = ({
                       <div className="flex justify-between">
                         <span>To Process:</span>
                         <span className="font-medium">
-                          {step.toProcess.name}
+                          {typeof step.toProcess.name === "string"
+                            ? step.toProcess.name
+                            : step.toProcess.name?.name || "N/A"}
                         </span>
                       </div>
                     )}
