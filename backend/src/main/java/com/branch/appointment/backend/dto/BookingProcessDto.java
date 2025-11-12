@@ -20,5 +20,6 @@ public class BookingProcessDto {
   private LocalDateTime changedAt;
   private LocalTime jobStartTime;
   private LocalTime jobEndTime;
+  private String delayReason;
 }
 

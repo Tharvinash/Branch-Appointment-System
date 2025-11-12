@@ -3,6 +3,7 @@ package com.branch.appointment.backend.controller;
 import com.branch.appointment.backend.dto.BookingDto;
 import com.branch.appointment.backend.dto.BookingProcessDto;
 import com.branch.appointment.backend.dto.ReasonForStoppageDto;
+import com.branch.appointment.backend.dto.TimeExtensionDto;
 import com.branch.appointment.backend.service.BookingService;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpHeaders;
@@ -11,7 +12,9 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalTime;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/bookings")
@@ -69,6 +72,33 @@ public class BookingController {
   @GetMapping("/stoppage/reasons")
   public List<ReasonForStoppageDto> getStoppageReasons() {
     return bookingService.getStoppageReasons();
+  }
+
+  @PostMapping("/{id}/extend-time")
+  public ResponseEntity<TimeExtensionDto> extendTime(
+      @PathVariable Long id,
+      @RequestBody Map<String, Object> request
+  ) {
+    String newEndTimeStr = (String) request.get("newEndTime");
+    String extendedBy = (String) request.getOrDefault("extendedBy", "System");
+    String reason = (String) request.getOrDefault("reason", "");
+    LocalTime newEndTime = LocalTime.parse(newEndTimeStr);
+    return ResponseEntity.ok(bookingService.extendTime(id, newEndTime, extendedBy, reason));
+  }
+
+  @GetMapping("/{id}/time-extensions")
+  public ResponseEntity<List<TimeExtensionDto>> getTimeExtensions(@PathVariable Long id) {
+    return ResponseEntity.ok(bookingService.getTimeExtensions(id));
+  }
+
+  @PostMapping("/{id}/delay-reason")
+  public ResponseEntity<Void> updateDelayReason(
+      @PathVariable Long id,
+      @RequestBody Map<String, String> request
+  ) {
+    String delayReason = request.get("delayReason");
+    bookingService.updateDelayReason(id, delayReason);
+    return ResponseEntity.ok().build();
   }
 }
 

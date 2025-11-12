@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -30,6 +31,7 @@ public class BookingService {
   private final ServiceAdvisorRepository serviceAdvisorRepository;
   private final BayRepository bayRepository;
   private final ReasonForStoppageRepository reasonForStoppageRepository;
+  private final TimeExtensionRepository timeExtensionRepository;
 
   public List<BookingDto> getBookings() {
     return bookingRepository.findAll().stream()
@@ -105,7 +107,7 @@ public class BookingService {
 
       // ✅ If bay changed while status is ACTIVE_BOARD, require new times
       if (oldStatus == BookingStatusEnum.ACTIVE_BOARD) {
-        if (dto.getCheckinDate() == null || dto.getPromiseDate() == null) {
+        if (dto.getJobStartTime() == null || dto.getJobEndTime() == null) {
           throw new RuntimeException("Start and End times must be provided when moving an active booking to a new bay");
         }
 
@@ -132,14 +134,23 @@ public class BookingService {
         }
       }
 
-        // Save booking process log
-        BookingProcessEntity process = new BookingProcessEntity();
-        process.setBooking(booking);
-        process.setFromStatus(oldStatus.toString());
-        process.setToStatus(dto.getStatus().toString());
-        process.setJobStartTime(dto.getJobStartTime());
-        process.setJobEndTime(dto.getJobEndTime());
-        processRepository.save(process);
+      // Save booking process log with bay information
+      BookingProcessEntity process = new BookingProcessEntity();
+      process.setBooking(booking);
+      process.setFromStatus(oldStatus.toString());
+      process.setToStatus(dto.getStatus().toString());
+      
+      // Set fromProcess and toProcess based on bay changes
+      BayEntity currentBay = booking.getBay();
+      process.setFromProcess(oldBayId != null ? 
+          bayRepository.findById(oldBayId).orElse(null) : null);
+      process.setToProcess(currentBay);
+      
+      process.setJobStartTime(dto.getJobStartTime());
+      process.setJobEndTime(dto.getJobEndTime());
+      process.setChangedAt(LocalDateTime.now());
+      // Delay reason will be set separately when moving to next process
+      processRepository.save(process);
     }
 
     BookingEntity saved = bookingRepository.save(booking);
@@ -162,8 +173,82 @@ public class BookingService {
             mapBayToDto(p.getToProcess()),     // convert entity → dto
             p.getChangedAt(),
             p.getJobStartTime(),
-            p.getJobEndTime()
+            p.getJobEndTime(),
+            p.getDelayReason()
         )).toList();
+  }
+
+  @Transactional
+  public TimeExtensionDto extendTime(Long bookingId, LocalTime newEndTime, String extendedBy, String reason) {
+    BookingEntity booking = bookingRepository.findById(bookingId)
+        .orElseThrow(() -> new RuntimeException("Booking not found with id: " + bookingId));
+
+    if (booking.getJobEndTime() == null) {
+      throw new RuntimeException("Booking does not have an end time to extend");
+    }
+
+    LocalTime previousEndTime = booking.getJobEndTime();
+
+    if (newEndTime.isBefore(previousEndTime) || newEndTime.equals(previousEndTime)) {
+      throw new RuntimeException("New end time must be after the current end time");
+    }
+
+    if (reason == null || reason.trim().isEmpty()) {
+      throw new RuntimeException("Reason for extending time is required");
+    }
+
+    // Create time extension record
+    TimeExtensionEntity extension = new TimeExtensionEntity();
+    extension.setBooking(booking);
+    extension.setPreviousEndTime(previousEndTime);
+    extension.setNewEndTime(newEndTime);
+    extension.setExtendedAt(LocalDateTime.now());
+    extension.setExtendedBy(extendedBy);
+    extension.setReason(reason.trim());
+    timeExtensionRepository.save(extension);
+
+    // Update booking end time
+    booking.setJobEndTime(newEndTime);
+    bookingRepository.save(booking);
+
+    return TimeExtensionDto.builder()
+        .id(extension.getId())
+        .bookingId(bookingId)
+        .previousEndTime(previousEndTime)
+        .newEndTime(newEndTime)
+        .extendedAt(extension.getExtendedAt())
+        .extendedBy(extendedBy)
+        .reason(reason.trim())
+        .build();
+  }
+
+  public List<TimeExtensionDto> getTimeExtensions(Long bookingId) {
+    return timeExtensionRepository.findByBookingIdOrderByExtendedAtDesc(bookingId)
+        .stream()
+        .map(e -> TimeExtensionDto.builder()
+            .id(e.getId())
+            .bookingId(bookingId)
+            .previousEndTime(e.getPreviousEndTime())
+            .newEndTime(e.getNewEndTime())
+            .extendedAt(e.getExtendedAt())
+            .extendedBy(e.getExtendedBy())
+            .reason(e.getReason())
+            .build())
+        .toList();
+  }
+
+  @Transactional
+  public void updateDelayReason(Long bookingId, String delayReason) {
+    // Find the most recent process entry for this booking
+    List<BookingProcessEntity> processes = processRepository.findByBookingIdOrderByChangedAtDesc(bookingId);
+    if (processes.isEmpty()) {
+      throw new RuntimeException("No process history found for booking: " + bookingId);
+    }
+
+    // Update the most recent process with delay reason
+    BookingProcessEntity latestProcess = processes.get(0);
+    latestProcess.setDelayReason(delayReason);
+    processRepository.save(latestProcess);
   }
 
   private BookingDto mapToDto(BookingEntity entity) {

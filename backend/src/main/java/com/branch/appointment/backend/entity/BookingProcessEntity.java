@@ -49,5 +49,8 @@ public class BookingProcessEntity {
 
   @Column(name = "Job_End_Time")
   private LocalTime jobEndTime;
+
+  @Column(name = "Delay_Reason", length = 1000)
+  private String delayReason;
 }
 
