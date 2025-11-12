@@ -1,13 +1,12 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   CreateServiceAdvisorData,
   serviceAdvisorAPI,
   serviceAdvisorValidators,
 } from "@/lib/api/service-advisors";
-// Note: These UI components need to be created or replaced with custom components
-// For now, we'll use standard HTML elements with Tailwind styling
+import { reasonAPI, Reason } from "@/lib/api/reasons";
 
 interface AddServiceAdvisorModalProps {
   open: boolean;
@@ -23,22 +22,71 @@ export default function AddServiceAdvisorModal({
   const [formData, setFormData] = useState<CreateServiceAdvisorData>({
     name: "",
     status: "AVAILABLE",
+    reason: null,
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [apiError, setApiError] = useState("");
+  const [reasons, setReasons] = useState<Reason[]>([]);
+  const [isLoadingReasons, setIsLoadingReasons] = useState(false);
+
+  // Fetch reasons when modal opens
+  useEffect(() => {
+    const fetchReasons = async () => {
+      if (open) {
+        setIsLoadingReasons(true);
+        try {
+          const reasonsResponse = await reasonAPI.getAllReasons();
+          if (reasonsResponse.success && reasonsResponse.data) {
+            setReasons(reasonsResponse.data);
+          }
+        } catch (error) {
+          console.error("Error fetching reasons:", error);
+        } finally {
+          setIsLoadingReasons(false);
+        }
+      }
+    };
+
+    fetchReasons();
+  }, [open]);
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    
+    // If status changes to AVAILABLE, clear reason
+    if (name === "status") {
+      setFormData((prev) => ({
+        ...prev,
+        status: value as "AVAILABLE" | "ON_LEAVE",
+        reason: value === "AVAILABLE" ? null : prev.reason,
+      }));
+    } else {
+      setFormData((prev) => ({ ...prev, [name]: value }));
+    }
 
     // Clear error when user starts typing
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: "" }));
     }
     if (apiError) setApiError("");
+  };
+
+  const handleReasonChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const value = e.target.value;
+    if (value) {
+      setFormData((prev) => ({
+        ...prev,
+        reason: { id: parseInt(value) },
+      }));
+    } else {
+      setFormData((prev) => ({ ...prev, reason: null }));
+    }
+    if (errors.reason) {
+      setErrors((prev) => ({ ...prev, reason: "" }));
+    }
   };
 
   const validateForm = (): boolean => {
@@ -63,7 +111,14 @@ export default function AddServiceAdvisorModal({
     setApiError("");
 
     try {
-      const response = await serviceAdvisorAPI.createServiceAdvisor(formData);
+      // Prepare data for API
+      const submitData: CreateServiceAdvisorData = {
+        name: formData.name,
+        status: formData.status,
+        reason: formData.status === "ON_LEAVE" ? formData.reason : null,
+      };
+
+      const response = await serviceAdvisorAPI.createServiceAdvisor(submitData);
 
       if (response.success) {
         onSuccess();
@@ -82,6 +137,7 @@ export default function AddServiceAdvisorModal({
     setFormData({
       name: "",
       status: "AVAILABLE",
+      reason: null,
     });
     setErrors({});
     setApiError("");
@@ -198,6 +254,40 @@ export default function AddServiceAdvisorModal({
               <p className="text-sm text-red-600">{errors.status}</p>
             )}
           </div>
+
+          {/* Reason Field - Only shown when status is ON_LEAVE */}
+          {formData.status === "ON_LEAVE" && (
+            <div className="space-y-2">
+              <label
+                htmlFor="reason"
+                className="block text-sm font-medium text-toyota-black"
+              >
+                Reason for Leave <span className="text-gray-500">(Optional)</span>
+              </label>
+              <select
+                id="reason"
+                name="reason"
+                value={formData.reason?.id.toString() || ""}
+                onChange={handleReasonChange}
+                disabled={isLoadingReasons}
+                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-toyota-red focus:border-toyota-red ${
+                  errors.reason ? "border-red-500" : "border-gray-300"
+                } ${isLoadingReasons ? "bg-gray-100 cursor-not-allowed" : ""}`}
+              >
+                <option value="">
+                  {isLoadingReasons ? "Loading reasons..." : "None"}
+                </option>
+                {reasons.map((reason) => (
+                  <option key={reason.id} value={reason.id.toString()}>
+                    {reason.reason}
+                  </option>
+                ))}
+              </select>
+              {errors.reason && (
+                <p className="text-sm text-red-600">{errors.reason}</p>
+              )}
+            </div>
+          )}
         </form>
 
         {/* Modal Footer */}

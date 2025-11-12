@@ -248,6 +248,9 @@ export default function AdminServiceAdvisorsPage() {
                       Status
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-toyota-text-secondary uppercase tracking-wider">
+                      Reason
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-toyota-text-secondary uppercase tracking-wider">
                       Actions
                     </th>
                   </tr>
@@ -272,6 +275,13 @@ export default function AdminServiceAdvisorsPage() {
                           <span className={statusInfo.className}>
                             {statusInfo.text}
                           </span>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-toyota-black">
+                          {serviceAdvisor.status === "ON_LEAVE" && serviceAdvisor.reason ? (
+                            <span className="text-gray-600">{serviceAdvisor.reason.reason}</span>
+                          ) : (
+                            <span className="text-gray-400">-</span>
+                          )}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                           <div className="flex space-x-2">

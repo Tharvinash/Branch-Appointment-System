@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
-import { CreateBayData, bayAPI, bayValidators } from "@/lib/api/bays";
+import React, { useState, useEffect } from "react";
+import { CreateBayData, bayAPI, bayValidators, BayName } from "@/lib/api/bays";
+import { technicianAPI, Technician } from "@/lib/api/technicians";
 import {
   Dialog,
   DialogContent,
@@ -33,13 +34,84 @@ export default function AddBayModal({
   onSuccess,
 }: AddBayModalProps) {
   const [formData, setFormData] = useState<CreateBayData>({
-    name: "",
+    name: { id: 0, name: "" },
     number: "",
     status: "ACTIVE",
+    technician: undefined,
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [apiError, setApiError] = useState("");
+  const [bayNames, setBayNames] = useState<BayName[]>([]);
+  const [technicians, setTechnicians] = useState<Technician[]>([]);
+  const [isLoadingBayNames, setIsLoadingBayNames] = useState(false);
+  const [isLoadingTechnicians, setIsLoadingTechnicians] = useState(false);
+  const [selectedTechnicianId, setSelectedTechnicianId] = useState<
+    number | null
+  >(null);
+
+  // Fetch bay names and technicians when modal opens
+  useEffect(() => {
+    const fetchData = async () => {
+      if (open) {
+        // Fetch bay names
+        setIsLoadingBayNames(true);
+        try {
+          const bayNamesResponse = await bayAPI.getBayNames();
+          if (bayNamesResponse.success && bayNamesResponse.data) {
+            setBayNames(bayNamesResponse.data);
+          } else {
+            console.error(
+              "Failed to fetch bay names:",
+              bayNamesResponse.message,
+            );
+          }
+        } catch (error) {
+          console.error("Error fetching bay names:", error);
+        } finally {
+          setIsLoadingBayNames(false);
+        }
+
+        // Fetch technicians
+        setIsLoadingTechnicians(true);
+        try {
+          const techniciansResponse = await technicianAPI.getAllTechnicians();
+          if (techniciansResponse.success && techniciansResponse.data) {
+            setTechnicians(techniciansResponse.data);
+          } else {
+            console.error(
+              "Failed to fetch technicians:",
+              techniciansResponse.message,
+            );
+          }
+        } catch (error) {
+          console.error("Error fetching technicians:", error);
+        } finally {
+          setIsLoadingTechnicians(false);
+        }
+      }
+    };
+
+    fetchData();
+  }, [open]);
+
+  // Filter technicians by selected bay name skill
+  const getAvailableTechnicians = (): Technician[] => {
+    if (!formData.name || formData.name.id === 0) {
+      // If no bay name selected, show all technicians
+      return technicians;
+    }
+
+    // Filter technicians who have the required skill (bay name)
+    return technicians.filter((technician) => {
+      if (!technician.jobSkills || technician.jobSkills.length === 0) {
+        return false;
+      }
+      return technician.jobSkills.some(
+        (skill) => skill.id === formData.name.id
+      );
+    });
+  };
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
@@ -57,7 +129,7 @@ export default function AddBayModal({
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
-    const nameError = bayValidators.bayName(formData.name);
+    const nameError = bayValidators.bayName(formData.name.name);
     if (nameError) newErrors.name = nameError;
 
     const bayNoError = bayValidators.bayNo(formData.number);
@@ -65,6 +137,19 @@ export default function AddBayModal({
 
     const statusError = bayValidators.bayStatus(formData.status);
     if (statusError) newErrors.status = statusError;
+
+    // Validate technician selection
+    if (!formData.technician) {
+      newErrors.technician = "Technician selection is required";
+    } else if (formData.name.id > 0) {
+      // Validate that technician has the required skill
+      const hasRequiredSkill = formData.technician.jobSkills?.some(
+        (skill) => skill.id === formData.name.id
+      );
+      if (!hasRequiredSkill) {
+        newErrors.technician = `Technician "${formData.technician.name}" does not have the required skill "${formData.name.name}". Please assign this skill to the technician first.`;
+      }
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -85,7 +170,16 @@ export default function AddBayModal({
         onSuccess();
         handleClose();
       } else {
-        setApiError(response.message || "Failed to create bay");
+        // Check if error is about skill mismatch
+        const errorMessage = response.message || "Failed to create bay";
+        if (errorMessage.includes("does not have the required skill")) {
+          setErrors((prev) => ({
+            ...prev,
+            technician: errorMessage,
+          }));
+        } else {
+          setApiError(errorMessage);
+        }
       }
     } catch (error) {
       setApiError("An unexpected error occurred. Please try again.");
@@ -96,10 +190,12 @@ export default function AddBayModal({
 
   const handleClose = () => {
     setFormData({
-      name: "",
+      name: { id: 0, name: "" },
       number: "",
       status: "ACTIVE",
+      technician: undefined,
     });
+    setSelectedTechnicianId(null);
     setErrors({});
     setApiError("");
     onClose();
@@ -145,16 +241,53 @@ export default function AddBayModal({
             <Label htmlFor="name">
               Bay Name <span className="text-red-500">*</span>
             </Label>
-            <Input
-              id="name"
-              name="name"
-              type="text"
-              required
-              value={formData.name}
-              onChange={handleInputChange}
-              className={errors.name ? "border-red-500" : ""}
-              placeholder="Enter bay name (e.g., Service Bay 1)"
-            />
+            <Select
+              value={formData.name.id > 0 ? formData.name.id.toString() : ""}
+              onValueChange={(value) => {
+                const selectedBayName = bayNames.find(
+                  (bayName) => bayName.id.toString() === value,
+                );
+                if (selectedBayName) {
+                  setFormData((prev) => ({ ...prev, name: selectedBayName }));
+                  
+                  // Clear selected technician if they don't have the required skill
+                  if (formData.technician) {
+                    const hasRequiredSkill = formData.technician.jobSkills?.some(
+                      (skill) => skill.id === selectedBayName.id
+                    );
+                    if (!hasRequiredSkill) {
+                      setFormData((prev) => ({ ...prev, technician: undefined }));
+                      setSelectedTechnicianId(null);
+                    }
+                  }
+                }
+                // Clear error when user selects
+                if (errors.name) {
+                  setErrors((prev) => ({ ...prev, name: "" }));
+                }
+                if (apiError) setApiError("");
+              }}
+            >
+              <SelectTrigger
+                className={`w-full ${errors.name ? "border-red-500" : ""}`}
+                disabled={isLoadingBayNames}
+              >
+                <SelectValue
+                  placeholder={
+                    isLoadingBayNames
+                      ? "Loading bay names..."
+                      : "Select bay name"
+                  }
+                />
+              </SelectTrigger>
+              <SelectContent>
+                {bayNames.map((bayName) => (
+                  <SelectItem key={bayName.id} value={bayName.id.toString()}>
+                    {bayName.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             {errors.name && (
               <p className="text-sm text-red-600">{errors.name}</p>
             )}
@@ -172,7 +305,7 @@ export default function AddBayModal({
               required
               value={formData.number}
               onChange={handleInputChange}
-              className={errors.number ? "border-red-500" : ""}
+              className={`w-full ${errors.number ? "border-red-500" : ""}`}
               placeholder="Enter bay number (e.g., B-01, Bay A)"
             />
             {errors.number && (
@@ -194,7 +327,9 @@ export default function AddBayModal({
                 handleInputChange(event);
               }}
             >
-              <SelectTrigger className={errors.status ? "border-red-500" : ""}>
+              <SelectTrigger
+                className={`w-full ${errors.status ? "border-red-500" : ""}`}
+              >
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -204,6 +339,85 @@ export default function AddBayModal({
             </Select>
             {errors.status && (
               <p className="text-sm text-red-600">{errors.status}</p>
+            )}
+          </div>
+
+          {/* Technician Field */}
+          <div className="space-y-2">
+            <Label htmlFor="technician">
+              Assign Technician <span className="text-red-500">*</span>
+            </Label>
+            {formData.name.id === 0 ? (
+              <div className="text-sm text-amber-600 bg-amber-50 border border-amber-200 px-3 py-2 rounded">
+                Please select a bay name first to see available technicians
+              </div>
+            ) : (
+              <>
+                <Select
+                  value={selectedTechnicianId?.toString() || ""}
+                  onValueChange={(value) => {
+                    const technicianId = value ? parseInt(value) : null;
+                    setSelectedTechnicianId(technicianId);
+                    const selectedTechnician = technicians.find(
+                      (t) => t.id === technicianId,
+                    );
+                    setFormData((prev) => ({
+                      ...prev,
+                      technician: selectedTechnician || undefined,
+                    }));
+                    // Clear error when user selects
+                    if (errors.technician) {
+                      setErrors((prev) => ({ ...prev, technician: "" }));
+                    }
+                    if (apiError) setApiError("");
+                  }}
+                >
+                  <SelectTrigger
+                    className={`w-full ${
+                      errors.technician ? "border-red-500" : ""
+                    }`}
+                    disabled={isLoadingTechnicians}
+                  >
+                    <SelectValue
+                      placeholder={
+                        isLoadingTechnicians
+                          ? "Loading technicians..."
+                          : "Select technician"
+                      }
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {getAvailableTechnicians().length === 0 ? (
+                      <div className="px-2 py-1.5 text-sm text-gray-500">
+                        No technicians available with required skill
+                      </div>
+                    ) : (
+                      getAvailableTechnicians().map((technician) => (
+                        <SelectItem
+                          key={technician.id}
+                          value={technician.id.toString()}
+                        >
+                          {technician.name} ({technician.status})
+                          {technician.jobSkills && technician.jobSkills.length > 0 && (
+                            <span className="text-xs text-gray-500 ml-1">
+                              - {technician.jobSkills.length} skill(s)
+                            </span>
+                          )}
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+                {getAvailableTechnicians().length === 0 && formData.name.id > 0 && (
+                  <p className="text-sm text-amber-600">
+                    No technicians have the required skill "{formData.name.name}". 
+                    Please assign this skill to a technician first.
+                  </p>
+                )}
+                {errors.technician && (
+                  <p className="text-sm text-red-600">{errors.technician}</p>
+                )}
+              </>
             )}
           </div>
         </form>

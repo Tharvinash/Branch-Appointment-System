@@ -20,8 +20,9 @@ public class BayEntity {
   @Column(name = "Bay_Id")
   private Long id;
 
-  @Column(name = "Bay_Name", nullable = false)
-  private String bayName;
+  @ManyToOne
+  @JoinColumn(name = "Bay_Name_Id", nullable = false)
+  private BayNameEntity bayName;
 
   @Column(name = "Bay_Number", nullable = false, unique = true)
   private String bayNumber;
@@ -29,4 +30,8 @@ public class BayEntity {
   @Enumerated(EnumType.STRING)
   @Column(name = "Status", nullable = false)
   private BayStatusEnum status;
+
+  @OneToOne
+  @JoinColumn(name = "Technician_Id", unique = true, nullable = true)
+  private TechnicianEntity technician;
 }

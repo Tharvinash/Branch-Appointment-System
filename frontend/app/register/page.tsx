@@ -17,7 +17,7 @@ export default function RegisterPage() {
   const [apiError, setApiError] = useState("");
 
   const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -43,7 +43,7 @@ export default function RegisterPage() {
 
     const confirmPasswordError = validators.confirmPassword(
       formData.password,
-      formData.confirmPassword,
+      formData.confirmPassword
     );
     if (confirmPasswordError) newErrors.confirmPassword = confirmPasswordError;
 
@@ -102,23 +102,27 @@ export default function RegisterPage() {
       <div className="w-full max-w-md space-y-8 relative z-10">
         {/* Header */}
         <div className="text-center">
-          {/* <div className="mx-auto h-20 w-20 bg-gradient-to-br from-toyota-red to-red-600 rounded-full flex items-center justify-center shadow-2xl border-4 border-toyota-white">
-            <span className="text-toyota-white text-3xl font-bold">T</span>
-          </div> */}
-          <h2 className="mt-6 text-4xl font-bold text-toyota-white">
+          <div className="mx-auto h-20 w-20 flex items-center justify-center">
+            <img
+              src="/toyota-logo.svg"
+              alt="Toyota Logo"
+              className="h-full w-full filter brightness-0 invert"
+            />
+          </div>
+          <h2 className="mt-2 text-4xl font-bold text-white">
             Create your account
           </h2>
           <p className="mt-2 text-sm text-gray-300">
-            Bring racing precision to your routine service
+            Join the service management system
           </p>
         </div>
 
         {/* Form */}
-        <div className="bg-black/80 backdrop-blur-sm border-2 border-toyota-red rounded-2xl p-8 shadow-2xl">
-          <form className="space-y-6" onSubmit={handleSubmit}>
+        <div className="bg-white border border-gray-200 rounded-2xl p-8 shadow-xl">
+          <form className="space-y-4" onSubmit={handleSubmit}>
             {/* API Error Alert */}
             {apiError && (
-              <div className="bg-red-900/50 border-2 border-red-500 text-red-200 px-4 py-3 rounded-lg backdrop-blur-sm">
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
                 <div className="flex">
                   <div className="flex-shrink-0">
                     <svg
@@ -144,7 +148,7 @@ export default function RegisterPage() {
             <div>
               <label
                 htmlFor="name"
-                className="block text-sm font-medium text-toyota-white mb-2"
+                className="block text-sm font-medium text-gray-700 mb-2"
               >
                 Full name
               </label>
@@ -156,13 +160,13 @@ export default function RegisterPage() {
                 required
                 value={formData.name}
                 onChange={handleInputChange}
-                className={`w-full px-4 py-3 bg-black/50 border-2 rounded-lg shadow-sm placeholder-gray-400 text-white focus:outline-none focus:ring-2 focus:ring-toyota-red focus:border-toyota-red transition-all duration-300 ${
-                  errors.name ? "border-red-500" : "border-gray-600"
+                className={`w-full px-4 py-3 bg-white border-2 rounded-lg shadow-sm placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-toyota-red focus:border-toyota-red transition-all duration-300 ${
+                  errors.name ? "border-red-500" : "border-gray-300"
                 }`}
                 placeholder="Enter your full name"
               />
               {errors.name && (
-                <p className="mt-1 text-sm text-red-400">{errors.name}</p>
+                <p className="mt-1 text-sm text-red-500">{errors.name}</p>
               )}
             </div>
 
@@ -170,7 +174,7 @@ export default function RegisterPage() {
             <div>
               <label
                 htmlFor="email"
-                className="block text-sm font-medium text-toyota-white mb-2"
+                className="block text-sm font-medium text-gray-700 mb-2"
               >
                 Email address
               </label>
@@ -182,13 +186,13 @@ export default function RegisterPage() {
                 required
                 value={formData.email}
                 onChange={handleInputChange}
-                className={`w-full px-4 py-3 bg-black/50 border-2 rounded-lg shadow-sm placeholder-gray-400 text-white focus:outline-none focus:ring-2 focus:ring-toyota-red focus:border-toyota-red transition-all duration-300 ${
-                  errors.email ? "border-red-500" : "border-gray-600"
+                className={`w-full px-4 py-3 bg-white border-2 rounded-lg shadow-sm placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-toyota-red focus:border-toyota-red transition-all duration-300 ${
+                  errors.email ? "border-red-500" : "border-gray-300"
                 }`}
                 placeholder="Enter your email"
               />
               {errors.email && (
-                <p className="mt-1 text-sm text-red-400">{errors.email}</p>
+                <p className="mt-1 text-sm text-red-500">{errors.email}</p>
               )}
             </div>
 
@@ -196,7 +200,7 @@ export default function RegisterPage() {
             <div>
               <label
                 htmlFor="role"
-                className="block text-sm font-medium text-toyota-white mb-2"
+                className="block text-sm font-medium text-gray-700 mb-2"
               >
                 Role
               </label>
@@ -206,19 +210,19 @@ export default function RegisterPage() {
                 required
                 value={formData.role}
                 onChange={handleInputChange}
-                className={`w-full px-4 py-3 pr-10 bg-black/50 border-2 rounded-lg shadow-sm text-white focus:outline-none focus:ring-2 focus:ring-toyota-red focus:border-toyota-red transition-all duration-300 ${
-                  errors.role ? "border-red-500" : "border-gray-600"
+                className={`w-full px-4 py-3 pr-10 bg-white border-2 rounded-lg shadow-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-toyota-red focus:border-toyota-red transition-all duration-300 ${
+                  errors.role ? "border-red-500" : "border-gray-300"
                 }`}
               >
-                <option value={1} className="bg-black text-white">
+                <option value={1} className="bg-white text-gray-900">
                   Technician
                 </option>
-                <option value={2} className="bg-black text-white">
+                <option value={2} className="bg-white text-gray-900">
                   Service Advisor
                 </option>
               </select>
               {errors.role && (
-                <p className="mt-1 text-sm text-red-400">{errors.role}</p>
+                <p className="mt-1 text-sm text-red-500">{errors.role}</p>
               )}
             </div>
 
@@ -226,7 +230,7 @@ export default function RegisterPage() {
             <div>
               <label
                 htmlFor="password"
-                className="block text-sm font-medium text-toyota-white mb-2"
+                className="block text-sm font-medium text-gray-700 mb-2"
               >
                 Password
               </label>
@@ -238,13 +242,13 @@ export default function RegisterPage() {
                 required
                 value={formData.password}
                 onChange={handleInputChange}
-                className={`w-full px-4 py-3 bg-black/50 border-2 rounded-lg shadow-sm placeholder-gray-400 text-white focus:outline-none focus:ring-2 focus:ring-toyota-red focus:border-toyota-red transition-all duration-300 ${
-                  errors.password ? "border-red-500" : "border-gray-600"
+                className={`w-full px-4 py-3 bg-white border-2 rounded-lg shadow-sm placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-toyota-red focus:border-toyota-red transition-all duration-300 ${
+                  errors.password ? "border-red-500" : "border-gray-300"
                 }`}
                 placeholder="Create a password"
               />
               {errors.password && (
-                <p className="mt-1 text-sm text-red-400">{errors.password}</p>
+                <p className="mt-1 text-sm text-red-500">{errors.password}</p>
               )}
             </div>
 
@@ -252,7 +256,7 @@ export default function RegisterPage() {
             <div>
               <label
                 htmlFor="confirmPassword"
-                className="block text-sm font-medium text-toyota-white mb-2"
+                className="block text-sm font-medium text-gray-700 mb-2"
               >
                 Confirm password
               </label>
@@ -264,13 +268,13 @@ export default function RegisterPage() {
                 required
                 value={formData.confirmPassword}
                 onChange={handleInputChange}
-                className={`w-full px-4 py-3 bg-black/50 border-2 rounded-lg shadow-sm placeholder-gray-400 text-white focus:outline-none focus:ring-2 focus:ring-toyota-red focus:border-toyota-red transition-all duration-300 ${
-                  errors.confirmPassword ? "border-red-500" : "border-gray-600"
+                className={`w-full px-4 py-3 bg-white border-2 rounded-lg shadow-sm placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-toyota-red focus:border-toyota-red transition-all duration-300 ${
+                  errors.confirmPassword ? "border-red-500" : "border-gray-300"
                 }`}
                 placeholder="Confirm your password"
               />
               {errors.confirmPassword && (
-                <p className="mt-1 text-sm text-red-400">
+                <p className="mt-1 text-sm text-red-500">
                   {errors.confirmPassword}
                 </p>
               )}
@@ -283,23 +287,23 @@ export default function RegisterPage() {
                 name="terms"
                 type="checkbox"
                 required
-                className="h-4 w-4 text-toyota-red focus:ring-toyota-red border-gray-600 bg-black/50 rounded"
+                className="h-4 w-4 text-toyota-red focus:ring-toyota-red border-gray-300 bg-white rounded"
               />
               <label
                 htmlFor="terms"
-                className="ml-2 block text-sm text-gray-300"
+                className="ml-2 block text-sm text-gray-600"
               >
                 I agree to the{" "}
                 <a
                   href="#"
-                  className="text-toyota-red hover:text-red-400 transition-colors"
+                  className="text-toyota-red hover:text-red-600 transition-colors"
                 >
                   Terms and Conditions
                 </a>{" "}
                 and{" "}
                 <a
                   href="#"
-                  className="text-toyota-red hover:text-red-400 transition-colors"
+                  className="text-toyota-red hover:text-red-600 transition-colors"
                 >
                   Privacy Policy
                 </a>
@@ -345,11 +349,11 @@ export default function RegisterPage() {
 
             {/* Login Link */}
             <div className="text-center">
-              <p className="text-sm text-gray-300">
+              <p className="text-sm text-gray-600">
                 Already have an account?{" "}
                 <Link
                   href="/login"
-                  className="font-medium text-toyota-red hover:text-red-400 transition-colors"
+                  className="font-medium text-toyota-red hover:text-red-600 transition-colors"
                 >
                   Sign in here
                 </Link>
@@ -360,7 +364,7 @@ export default function RegisterPage() {
 
         {/* Footer */}
         <div className="text-center">
-          <p className="text-xs text-gray-400">
+          <p className="text-xs text-gray-300">
             © 2025 Service Management System
           </p>
         </div>

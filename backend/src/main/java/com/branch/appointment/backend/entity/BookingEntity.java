@@ -53,5 +53,8 @@ public class BookingEntity {
 
   @Column(name = "Job_End_Time")
   private LocalTime jobEndTime;
+
+  @Column(name = "Stoppage_Reason")
+  private String stoppageReason;
 }
 

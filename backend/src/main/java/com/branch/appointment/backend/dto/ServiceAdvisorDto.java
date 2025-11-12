@@ -12,4 +12,5 @@ public class ServiceAdvisorDto {
   private Long id;
   private String name;
   private ServiceAdvisorStatusEnum status;
+  private ReasonDto reason;
 }

@@ -19,6 +19,7 @@ export interface Booking {
     | "REPAIR_COMPLETION";
   jobStartTime?: string; // Time format HH:mm:ss
   jobEndTime?: string; // Time format HH:mm:ss
+  stoppageReason?: string; // Reason for job stoppage
 }
 
 export interface ProcessStep {
@@ -51,6 +52,17 @@ export interface ProcessHistoryResponse {
 export interface ProcessStepResponse {
   success: boolean;
   data?: ProcessStep;
+  message?: string;
+}
+
+export interface StoppageReason {
+  id: number;
+  reasonName: string;
+}
+
+export interface StoppageReasonsResponse {
+  success: boolean;
+  data?: StoppageReason[];
   message?: string;
 }
 
@@ -88,6 +100,7 @@ export interface UpdateBookingRequest {
     | "REPAIR_COMPLETION";
   jobStartTime?: string;
   jobEndTime?: string;
+  stoppageReason?: string;
 }
 
 export interface BookingResponse {
@@ -258,6 +271,29 @@ export const bookingAPI = {
     }
   },
 
+  // Get stoppage reasons
+  getStoppageReasons: async (): Promise<StoppageReasonsResponse> => {
+    try {
+      const response = await apiCall<StoppageReason[]>(
+        "/bookings/stoppage/reasons",
+        {},
+        "GET",
+      );
+      return {
+        success: true,
+        data: response,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message:
+          error instanceof Error
+            ? error.message
+            : "Failed to fetch stoppage reasons",
+      };
+    }
+  },
+
   // Workflow status transitions
   workflow: {
     // QUEUING → BAY_QUEUE
@@ -364,7 +400,10 @@ export const bookingAPI = {
     },
 
     // ACTIVE_BOARD → JOB_STOPPAGE
-    pauseJob: async (bookingId: number): Promise<BookingResponse> => {
+    pauseJob: async (
+      bookingId: number,
+      stoppageReason?: string,
+    ): Promise<BookingResponse> => {
       try {
         // First get the current booking data
         const currentBooking = await bookingAPI.getBooking(bookingId);
@@ -375,10 +414,11 @@ export const bookingAPI = {
           };
         }
 
-        // Update the booking with new status
+        // Update the booking with new status and stoppage reason
         const updateData: UpdateBookingRequest = {
           ...currentBooking.data,
           status: "JOB_STOPPAGE",
+          stoppageReason: stoppageReason,
         };
 
         const response = await bookingAPI.updateBooking(bookingId, updateData);

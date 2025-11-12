@@ -2,23 +2,45 @@
 
 import { tokenManager } from "@/lib/auth";
 
-export interface Bay {
+// Import Technician interface
+export interface Reason {
+  id: number;
+  reason: string;
+}
+
+export interface Technician {
   id: number;
   name: string;
+  status: "AVAILABLE" | "ON_LEAVE";
+  reason?: Reason | null;
+  jobSkills?: BayName[] | null;
+}
+
+export interface Bay {
+  id: number;
+  name: BayName;
   number: string;
   status: "ACTIVE" | "INACTIVE";
+  technician?: Technician;
+}
+
+export interface BayName {
+  id: number;
+  name: string;
 }
 
 export interface CreateBayData {
-  name: string;
+  name: BayName;
   number: string;
   status: "ACTIVE" | "INACTIVE";
+  technician?: Technician;
 }
 
 export interface UpdateBayData {
-  name: string;
+  name: BayName;
   number: string;
   status: "ACTIVE" | "INACTIVE";
+  technician?: Technician;
 }
 
 export interface ApiResponse<T> {
@@ -113,6 +135,11 @@ export const bayAPI = {
   deleteBay: async (bayId: number): Promise<ApiResponse<void>> => {
     return apiCall<void>(`/bays/${bayId}`, undefined, "DELETE");
   },
+
+  // Get bay names
+  getBayNames: async (): Promise<ApiResponse<BayName[]>> => {
+    return apiCall<BayName[]>("/bays/names");
+  },
 };
 
 // Validation helpers
@@ -197,7 +224,7 @@ export const bayUtils = {
     const lowercaseQuery = query.toLowerCase();
     return bays.filter(
       (bay) =>
-        bay.name.toLowerCase().includes(lowercaseQuery) ||
+        bay.name.name.toLowerCase().includes(lowercaseQuery) ||
         bay.number.toLowerCase().includes(lowercaseQuery),
     );
   },

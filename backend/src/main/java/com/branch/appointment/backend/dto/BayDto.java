@@ -10,7 +10,8 @@ import lombok.*;
 @Builder
 public class BayDto {
   private Long id;
-  private String name;
+  private BayNameDto name;
   private String number;
   private BayStatusEnum status;
+  private TechnicianDto technician;
 }

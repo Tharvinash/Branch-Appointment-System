@@ -10,20 +10,36 @@ const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080";
 
 // Types
+export interface Reason {
+  id: number;
+  reason: string;
+}
+
+export interface BayName {
+  id: number;
+  name: string;
+}
+
 export interface Technician {
   id: number;
   name: string;
   status: "AVAILABLE" | "ON_LEAVE";
+  reason?: Reason | null;
+  jobSkills?: BayName[] | null;
 }
 
 export interface CreateTechnicianData {
   name: string;
   status: "AVAILABLE" | "ON_LEAVE";
+  reason?: { id: number } | null;
+  jobSkills?: { id: number }[] | null;
 }
 
 export interface UpdateTechnicianData {
   name: string;
   status: "AVAILABLE" | "ON_LEAVE";
+  reason?: { id: number } | null;
+  jobSkills?: { id: number }[] | null;
 }
 
 export interface ApiResponse<T> {

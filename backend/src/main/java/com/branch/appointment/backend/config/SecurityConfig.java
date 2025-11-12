@@ -40,6 +40,7 @@ public class SecurityConfig {
   @Bean
   public CorsConfigurationSource corsConfigurationSource() {
     CorsConfiguration configuration = new CorsConfiguration();
+    configuration.addAllowedOrigin("https://branch-appointment-system-d6igl.sevalla.app");
     configuration.addAllowedOrigin("http://localhost:3000"); // React app origin
     configuration.addAllowedMethod("*"); // Allow GET, POST, PUT, DELETE, etc.
     configuration.addAllowedHeader("*"); // Allow all headers

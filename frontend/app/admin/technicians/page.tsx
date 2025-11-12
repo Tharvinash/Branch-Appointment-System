@@ -246,6 +246,12 @@ export default function AdminTechniciansPage() {
                       Status
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-toyota-text-secondary uppercase tracking-wider">
+                      Reason
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-toyota-text-secondary uppercase tracking-wider">
+                      Job Skills
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-toyota-text-secondary uppercase tracking-wider">
                       Actions
                     </th>
                   </tr>
@@ -270,6 +276,29 @@ export default function AdminTechniciansPage() {
                           <span className={statusInfo.className}>
                             {statusInfo.text}
                           </span>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-toyota-black">
+                          {technician.status === "ON_LEAVE" && technician.reason ? (
+                            <span className="text-gray-600">{technician.reason.reason}</span>
+                          ) : (
+                            <span className="text-gray-400">-</span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 text-sm">
+                          {technician.jobSkills && technician.jobSkills.length > 0 ? (
+                            <div className="flex flex-wrap gap-1">
+                              {technician.jobSkills.map((skill) => (
+                                <span
+                                  key={skill.id}
+                                  className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+                                >
+                                  {skill.name}
+                                </span>
+                              ))}
+                            </div>
+                          ) : (
+                            <span className="text-gray-400">No skills assigned</span>
+                          )}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                           <div className="flex space-x-2">
