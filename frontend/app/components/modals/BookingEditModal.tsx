@@ -601,7 +601,7 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
               {booking.status === "JOB_STOPPAGE" && booking.stoppageReason && (
                 <div>
                   <span className="font-medium">Stoppage Reason:</span>{" "}
-                  <span className="text-red-600 font-medium">
+                  <span className="text-toyota-red font-medium">
                     {booking.stoppageReason}
                   </span>
                 </div>
@@ -611,11 +611,11 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
 
           {/* API Error Alert */}
           {apiError && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+            <div className="bg-toyota-gray border border-gray-300 text-toyota-red px-4 py-3 rounded-lg">
               <div className="flex">
                 <div className="flex-shrink-0">
                   <svg
-                    className="h-5 w-5 text-red-400"
+                    className="h-5 w-5 text-toyota-red"
                     viewBox="0 0 20 20"
                     fill="currentColor"
                   >
@@ -877,12 +877,12 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
                 Time Management
               </h4>
               <div className="space-y-3">
-                <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                <div className="flex items-center justify-between p-3 bg-toyota-gray rounded-lg">
                   <div>
-                    <div className="text-xs text-gray-600">
+                    <div className="text-xs text-toyota-text-secondary">
                       Current End Time
                     </div>
-                    <div className="text-sm font-semibold text-gray-900">
+                    <div className="text-sm font-semibold text-toyota-black">
                       {booking.jobEndTime.slice(0, 5)}
                     </div>
                   </div>
@@ -891,7 +891,7 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
                     variant="outline"
                     size="sm"
                     onClick={() => setIsExtendTimeModalOpen(true)}
-                    className="bg-blue-100 text-blue-800 hover:bg-blue-200 border-blue-300"
+                    className="btn-toyota-outline"
                   >
                     ⏰ Extend Time
                   </Button>
@@ -900,26 +900,26 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
                 {/* Time Extensions History */}
                 {timeExtensions.length > 0 && (
                   <div className="space-y-2">
-                    <div className="text-xs font-medium text-gray-700">
+                    <div className="text-xs font-medium text-toyota-text-secondary">
                       Extension History:
                     </div>
                     <div className="max-h-32 overflow-y-auto space-y-1">
                       {timeExtensions.map((ext) => (
                         <div
                           key={ext.id}
-                          className="text-xs p-2 bg-gray-50 rounded border border-gray-200"
+                          className="text-xs p-2 bg-toyota-gray rounded border border-gray-200"
                         >
                           <div className="flex justify-between mb-1">
-                            <span className="text-gray-600 font-medium">
+                            <span className="text-toyota-text-secondary font-medium">
                               {ext.previousEndTime.slice(0, 5)} →{" "}
                               {ext.newEndTime.slice(0, 5)}
                             </span>
-                            <span className="text-gray-500 text-xs">
+                            <span className="text-toyota-text-secondary text-xs">
                               {new Date(ext.extendedAt).toLocaleString()}
                             </span>
                           </div>
                           {ext.reason && (
-                            <div className="text-gray-700 mt-1 italic">
+                            <div className="text-toyota-black mt-1 italic">
                               Reason: {ext.reason}
                             </div>
                           )}
@@ -956,7 +956,7 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
                     size="sm"
                     onClick={handleCompleteJob}
                     disabled={!delayReason.trim() || isLoading}
-                    className="bg-green-600 hover:bg-green-700 text-white"
+                    className="btn-toyota-primary text-white"
                   >
                     Complete with Reason
                   </Button>
@@ -1000,7 +1000,7 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
                     setIsChangeBayModalOpen(true);
                   }}
                   disabled={isLoading}
-                  className="bg-orange-100 text-orange-800 hover:bg-orange-200 border-orange-300"
+                  className="btn-toyota-outline"
                 >
                   Change Bay
                 </Button>
@@ -1040,14 +1040,14 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
                   disabled={isLoading}
                   className={
                     action === "Complete Job"
-                      ? "bg-green-100 text-green-800 hover:bg-green-200 border-green-300"
+                      ? "btn-toyota-outline"
                       : action === "Pause Job"
-                      ? "bg-red-100 text-red-800 hover:bg-red-200 border-red-300"
+                      ? "bg-toyota-gray-dark text-toyota-black hover:bg-gray-300 border-gray-300"
                       : action === "Resume Job"
-                      ? "bg-blue-100 text-blue-800 hover:bg-blue-200 border-blue-300"
+                      ? "btn-toyota-outline"
                       : action === "Assign to Bay"
-                      ? "bg-toyota-red text-white hover:bg-toyota-red-dark border-toyota-red"
-                      : "bg-gray-100 text-gray-800 hover:bg-gray-200 border-gray-300"
+                      ? "btn-toyota-primary text-white"
+                      : "bg-toyota-gray text-toyota-black hover:bg-toyota-gray-dark border-gray-300"
                   }
                 >
                   {isLoading && action === "Assign to Bay" ? (
@@ -1080,7 +1080,7 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
                 </Button>
               ))}
               {bookingUtils.getNextActions(booking.status).length === 0 && (
-                <span className="text-sm text-gray-500">
+                <span className="text-sm text-toyota-text-secondary">
                   No actions available
                 </span>
               )}
@@ -1208,7 +1208,7 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
               />
             </div>
             {extendTimeError && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+              <div className="bg-toyota-gray border border-gray-300 text-toyota-red px-4 py-3 rounded-lg text-sm">
                 {extendTimeError}
               </div>
             )}
@@ -1233,7 +1233,7 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
               disabled={
                 !newEndTime || !extendTimeReason.trim() || isExtendingTime
               }
-              className="bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50"
+              className="btn-toyota-primary disabled:opacity-50"
             >
               {isExtendingTime ? (
                 <>
@@ -1394,7 +1394,7 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
 
             {/* General Error */}
             {changeBayErrors.general && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+              <div className="bg-toyota-gray border border-gray-300 text-toyota-red px-4 py-3 rounded-lg text-sm">
                 {changeBayErrors.general}
               </div>
             )}
@@ -1425,7 +1425,7 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
                 !changeBayForm.jobEndTime ||
                 isChangingBay
               }
-              className="bg-orange-600 hover:bg-orange-700 text-white disabled:opacity-50"
+              className="btn-toyota-primary disabled:opacity-50"
             >
               {isChangingBay ? (
                 <>
