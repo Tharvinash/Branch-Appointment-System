@@ -864,10 +864,20 @@ const BookingDashboard: React.FC = () => {
                                     bookingProcessHistory[booking.id] || [];
                                   const uniqueBays = new Set<string>();
                                   history.forEach((step: ProcessStep) => {
-                                    if (step.toProcess?.name)
-                                      uniqueBays.add(step.toProcess.name);
-                                    if (step.fromProcess?.name)
-                                      uniqueBays.add(step.fromProcess.name);
+                                    if (step.toProcess?.name) {
+                                      const bayName =
+                                        typeof step.toProcess.name === "string"
+                                          ? step.toProcess.name
+                                          : step.toProcess.name.name;
+                                      uniqueBays.add(bayName);
+                                    }
+                                    if (step.fromProcess?.name) {
+                                      const bayName =
+                                        typeof step.fromProcess.name === "string"
+                                          ? step.fromProcess.name
+                                          : step.fromProcess.name.name;
+                                      uniqueBays.add(bayName);
+                                    }
                                   });
                                   if (currentBay?.name?.name)
                                     uniqueBays.add(currentBay.name.name);
