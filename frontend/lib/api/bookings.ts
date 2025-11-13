@@ -28,19 +28,23 @@ export interface ProcessStep {
   toStatus: string;
   fromProcess: {
     id: number;
-    name: {
-      id: number;
-      name: string;
-    } | string; // Can be BayNameDto object or string (for backward compatibility)
+    name:
+      | {
+          id: number;
+          name: string;
+        }
+      | string; // Can be BayNameDto object or string (for backward compatibility)
     number: string;
     status: "ACTIVE" | "INACTIVE";
   } | null;
   toProcess: {
     id: number;
-    name: {
-      id: number;
-      name: string;
-    } | string; // Can be BayNameDto object or string (for backward compatibility)
+    name:
+      | {
+          id: number;
+          name: string;
+        }
+      | string; // Can be BayNameDto object or string (for backward compatibility)
     number: string;
     status: "ACTIVE" | "INACTIVE";
   } | null;
@@ -146,7 +150,7 @@ const API_BASE_URL =
 async function apiCall<T>(
   endpoint: string,
   data: any,
-  method: "POST" | "GET" | "PUT" | "PATCH" | "DELETE" = "POST",
+  method: "POST" | "GET" | "PUT" | "PATCH" | "DELETE" = "POST"
 ): Promise<T> {
   const token = tokenManager.getToken();
 
@@ -173,7 +177,7 @@ async function apiCall<T>(
 export const bookingAPI = {
   // Create new booking (Check-in)
   createBooking: async (
-    bookingData: CreateBookingRequest,
+    bookingData: CreateBookingRequest
   ): Promise<BookingResponse> => {
     try {
       const response = await apiCall<Booking>("/bookings", bookingData, "POST");
@@ -213,7 +217,7 @@ export const bookingAPI = {
       const response = await apiCall<Booking>(
         `/bookings/${bookingId}`,
         {},
-        "GET",
+        "GET"
       );
       return {
         success: true,
@@ -231,13 +235,13 @@ export const bookingAPI = {
   // Update booking status and details
   updateBooking: async (
     bookingId: number,
-    updateData: UpdateBookingRequest,
+    updateData: UpdateBookingRequest
   ): Promise<BookingResponse> => {
     try {
       const response = await apiCall<Booking>(
         `/bookings/${bookingId}`,
         updateData,
-        "PUT",
+        "PUT"
       );
 
       return {
@@ -271,13 +275,13 @@ export const bookingAPI = {
 
   // Get booking history
   getBookingHistory: async (
-    bookingId: number,
+    bookingId: number
   ): Promise<ProcessHistoryResponse> => {
     try {
       const response = await apiCall<ProcessStep[]>(
         `/bookings/${bookingId}/history`,
         {},
-        "GET",
+        "GET"
       );
       return {
         success: true,
@@ -299,7 +303,7 @@ export const bookingAPI = {
     bookingId: number,
     newEndTime: string,
     extendedBy?: string,
-    reason?: string,
+    reason?: string
   ): Promise<ApiResponse<TimeExtension>> => {
     try {
       const response = await apiCall<TimeExtension>(
@@ -309,7 +313,7 @@ export const bookingAPI = {
           extendedBy: extendedBy || "System",
           reason: reason || "",
         },
-        "POST",
+        "POST"
       );
       return {
         success: true,
@@ -328,13 +332,13 @@ export const bookingAPI = {
 
   // Get time extensions for a booking
   getTimeExtensions: async (
-    bookingId: number,
+    bookingId: number
   ): Promise<ApiResponse<TimeExtension[]>> => {
     try {
       const response = await apiCall<TimeExtension[]>(
         `/bookings/${bookingId}/time-extensions`,
         {},
-        "GET",
+        "GET"
       );
       return {
         success: true,
@@ -355,13 +359,13 @@ export const bookingAPI = {
   // Update delay reason
   updateDelayReason: async (
     bookingId: number,
-    delayReason: string,
+    delayReason: string
   ): Promise<ApiResponse<void>> => {
     try {
       await apiCall<void>(
         `/bookings/${bookingId}/delay-reason`,
         { delayReason },
-        "POST",
+        "POST"
       );
       return {
         success: true,
@@ -383,7 +387,7 @@ export const bookingAPI = {
       const response = await apiCall<StoppageReason[]>(
         "/bookings/stoppage/reasons",
         {},
-        "GET",
+        "GET"
       );
       return {
         success: true,
@@ -405,7 +409,7 @@ export const bookingAPI = {
     // QUEUING → NEXT_JOB (directly when assigning to bay)
     assignToBay: async (
       bookingId: number,
-      bayId: number,
+      bayId: number
     ): Promise<BookingResponse> => {
       try {
         // First get the current booking data
@@ -446,7 +450,7 @@ export const bookingAPI = {
     // BAY_QUEUE → NEXT_JOB
     moveToNextJob: async (
       bookingId: number,
-      bayId: number,
+      bayId: number
     ): Promise<BookingResponse> => {
       try {
         // First get the current booking data
@@ -490,7 +494,7 @@ export const bookingAPI = {
     startJob: async (
       bookingId: number,
       jobStartTime: string,
-      jobEndTime: string,
+      jobEndTime: string
     ): Promise<BookingResponse> => {
       try {
         // First get the current booking data
@@ -540,7 +544,7 @@ export const bookingAPI = {
     // ACTIVE_BOARD → JOB_STOPPAGE
     pauseJob: async (
       bookingId: number,
-      stoppageReason?: string,
+      stoppageReason?: string
     ): Promise<BookingResponse> => {
       try {
         // First get the current booking data
@@ -666,13 +670,13 @@ export const bookingAPI = {
         notes?: string;
         bayId?: string;
         technicianId?: string;
-      },
+      }
     ): Promise<ProcessStepResponse> => {
       try {
         const response = await apiCall<ProcessStepResponse>(
           `/api/bookings/${bookingId}/processes`,
           processData,
-          "POST",
+          "POST"
         );
         return response;
       } catch (error) {
@@ -695,13 +699,13 @@ export const bookingAPI = {
         notes?: string;
         bayId?: string;
         technicianId?: string;
-      },
+      }
     ): Promise<ProcessStepResponse> => {
       try {
         const response = await apiCall<ProcessStepResponse>(
           `/api/processes/${processId}`,
           updateData,
-          "PATCH",
+          "PATCH"
         );
         return response;
       } catch (error) {
@@ -715,13 +719,13 @@ export const bookingAPI = {
 
     // Fetch process history for a booking
     getProcessHistory: async (
-      bookingId: string,
+      bookingId: string
     ): Promise<ProcessHistoryResponse> => {
       try {
         const response = await apiCall<ProcessHistoryResponse>(
           `/api/bookings/${bookingId}/processes`,
           {},
-          "GET",
+          "GET"
         );
         return response;
       } catch (error) {
@@ -739,20 +743,14 @@ export const bookingAPI = {
 
 // Status utilities
 export const bookingUtils = {
-  getStatusColor: (status: Booking["status"]) => {
-    switch (status) {
-      case "QUEUING":
-        return "bg-yellow-100 border-yellow-300 text-yellow-800";
-      case "BAY_QUEUE":
-        return "bg-blue-100 border-blue-300 text-blue-800";
-      case "NEXT_JOB":
-        return "bg-purple-100 border-purple-300 text-purple-800";
-      case "ACTIVE_BOARD":
+  getStatusColor: (jobType: Booking["jobType"]) => {
+    switch (jobType) {
+      case "LIGHT":
         return "bg-green-100 border-green-300 text-green-800";
-      case "JOB_STOPPAGE":
+      case "MEDIUM":
+        return "bg-yellow-100 border-yellow-300 text-yellow-800";
+      case "HEAVY":
         return "bg-red-100 border-red-300 text-red-800";
-      case "REPAIR_COMPLETION":
-        return "bg-gray-100 border-gray-300 text-gray-800";
       default:
         return "bg-gray-100 border-gray-300 text-gray-800";
     }
@@ -798,7 +796,7 @@ export const bookingUtils = {
 
   canTransitionTo: (
     currentStatus: Booking["status"],
-    targetStatus: Booking["status"],
+    targetStatus: Booking["status"]
   ) => {
     const validTransitions: Record<Booking["status"], Booking["status"][]> = {
       QUEUING: ["NEXT_JOB"], // Can go directly to NEXT_JOB when assigning to bay

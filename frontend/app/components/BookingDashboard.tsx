@@ -410,7 +410,7 @@ const BookingDashboard: React.FC = () => {
               <div className="text-xs text-toyota-text-secondary font-medium">
                 Bays Open
               </div>
-              <div className="text-2xl font-bold text-blue-600 mt-1">
+              <div className="text-2xl font-bold text-black mt-1">
                 {bays.filter((b) => b.status === "ACTIVE").length}
               </div>
             </div>
@@ -425,7 +425,7 @@ const BookingDashboard: React.FC = () => {
               <div className="text-xs text-toyota-text-secondary font-medium">
                 Queuing
               </div>
-              <div className="text-2xl font-bold text-yellow-600 mt-1">
+              <div className="text-2xl font-bold text-black mt-1">
                 {bookings.filter((b) => b.status === "QUEUING").length}
               </div>
             </div>
@@ -440,7 +440,7 @@ const BookingDashboard: React.FC = () => {
               <div className="text-xs text-toyota-text-secondary font-medium">
                 Next Job
               </div>
-              <div className="text-2xl font-bold text-purple-600 mt-1">
+              <div className="text-2xl font-bold text-black mt-1">
                 {bookings.filter((b) => b.status === "NEXT_JOB").length}
               </div>
             </div>
@@ -455,7 +455,7 @@ const BookingDashboard: React.FC = () => {
               <div className="text-xs text-toyota-text-secondary font-medium">
                 In Progress
               </div>
-              <div className="text-2xl font-bold text-green-600 mt-1">
+              <div className="text-2xl font-bold text-black mt-1">
                 {bookings.filter((b) => b.status === "ACTIVE_BOARD").length}
               </div>
             </div>
@@ -470,7 +470,7 @@ const BookingDashboard: React.FC = () => {
               <div className="text-xs text-toyota-text-secondary font-medium">
                 Waiting For QC
               </div>
-              <div className="text-2xl font-bold text-indigo-600 mt-1">
+              <div className="text-2xl font-bold text-black mt-1">
                 {bookings.filter((b) => b.status === "BAY_QUEUE").length}
               </div>
             </div>
@@ -485,7 +485,7 @@ const BookingDashboard: React.FC = () => {
               <div className="text-xs text-toyota-text-secondary font-medium">
                 Repair Completion
               </div>
-              <div className="text-2xl font-bold text-gray-600 mt-1">
+              <div className="text-2xl font-bold text-black mt-1">
                 {
                   bookings.filter((b) => b.status === "REPAIR_COMPLETION")
                     .length
@@ -503,7 +503,7 @@ const BookingDashboard: React.FC = () => {
               <div className="text-xs text-toyota-text-secondary font-medium">
                 Job Stoppage
               </div>
-              <div className="text-2xl font-bold text-red-600 mt-1">
+              <div className="text-2xl font-bold text-black mt-1">
                 {bookings.filter((b) => b.status === "JOB_STOPPAGE").length}
               </div>
             </div>
@@ -537,7 +537,7 @@ const BookingDashboard: React.FC = () => {
         {/* Content Row */}
         <div className="grid grid-cols-3 min-h-64">
           {/* Queuing Column */}
-          <div className="col-span-1 p-4 border-r-2 border-gray-300 bg-yellow-50 overflow-y-auto max-h-64">
+          <div className="col-span-1 p-4 border-r-2 border-gray-300 bg-[#fef2f2] overflow-y-auto max-h-64">
             <div className="space-y-2">
               {bookings
                 .filter((b) => b.status === "QUEUING")
@@ -545,7 +545,7 @@ const BookingDashboard: React.FC = () => {
                   <div
                     key={booking.id}
                     className={`p-2 rounded-lg border-l-4 shadow-sm ${bookingUtils.getStatusColor(
-                      booking.status
+                      booking.jobType
                     )} cursor-pointer hover:shadow-lg transition-all duration-200`}
                     onClick={() => openModal(booking)}
                   >
@@ -573,7 +573,7 @@ const BookingDashboard: React.FC = () => {
           </div>
 
           {/* Waiting For QC Column */}
-          <div className="col-span-1 p-4 border-r-2 border-gray-300 bg-indigo-50 overflow-y-auto max-h-64">
+          <div className="col-span-1 p-4 border-r-2 border-gray-300 bg-[#fef2f2] overflow-y-auto max-h-64">
             <div className="space-y-2">
               {bookings
                 .filter((b) => b.status === "BAY_QUEUE")
@@ -581,7 +581,7 @@ const BookingDashboard: React.FC = () => {
                   <div
                     key={booking.id}
                     className={`p-2 rounded-lg border-l-4 shadow-sm ${bookingUtils.getStatusColor(
-                      booking.status
+                      booking.jobType
                     )} cursor-pointer hover:shadow-lg transition-all duration-200`}
                     onClick={() => openModal(booking)}
                   >
@@ -610,7 +610,7 @@ const BookingDashboard: React.FC = () => {
           </div>
 
           {/* Repair Completion Column */}
-          <div className="col-span-1 p-4 border-r-2 border-gray-300 bg-gray-50 overflow-y-auto max-h-64">
+          <div className="col-span-1 p-4 border-r-2 border-gray-300 bg-[#fef2f2] overflow-y-auto max-h-64">
             <div className="space-y-2">
               {bookings
                 .filter((b) => b.status === "REPAIR_COMPLETION")
@@ -618,7 +618,7 @@ const BookingDashboard: React.FC = () => {
                   <div
                     key={booking.id}
                     className={`p-2 rounded-lg border-l-4 shadow-sm ${bookingUtils.getStatusColor(
-                      booking.status
+                      booking.jobType
                     )} cursor-pointer hover:shadow-lg transition-all duration-200`}
                     onClick={() => openModal(booking)}
                   >
@@ -714,13 +714,13 @@ const BookingDashboard: React.FC = () => {
                 }`}
               >
                 {/* Next Job Column */}
-                <div className="w-32 p-2 border-r-2 border-gray-300 bg-purple-50 flex-shrink-0 overflow-y-auto">
+                <div className="w-32 p-2 border-r-2 border-gray-300 bg-[#fef2f2] flex-shrink-0 overflow-y-auto">
                   <div className="space-y-2">
                     {nextJobBookings.map((booking) => (
                       <div
                         key={booking.id}
                         className={`p-2 rounded-lg border-l-4 shadow-sm ${bookingUtils.getStatusColor(
-                          booking.status
+                          booking.jobType
                         )} cursor-pointer hover:shadow-lg transition-all duration-200`}
                         onClick={() => openModal(booking)}
                       >
@@ -740,9 +740,7 @@ const BookingDashboard: React.FC = () => {
                       </div>
                     ))}
                     {nextJobBookings.length === 0 && (
-                      <div className="text-xs text-gray-400 text-center py-4">
-                        No bookings
-                      </div>
+                      <div className="text-xs text-gray-400 text-center py-4"></div>
                     )}
                   </div>
                 </div>
@@ -806,7 +804,7 @@ const BookingDashboard: React.FC = () => {
                           <div
                             key={booking.id}
                             className={`absolute top-4 bottom-4 rounded-lg border-l-4 shadow-sm ${bookingUtils.getStatusColor(
-                              booking.status
+                              booking.jobType
                             )} cursor-pointer hover:shadow-lg transition-all duration-200 transform hover:scale-105`}
                             style={{
                               left: position.left,
@@ -906,7 +904,7 @@ const BookingDashboard: React.FC = () => {
                       <div
                         key={booking.id}
                         className={`p-2 rounded-lg border-l-4 shadow-sm ${bookingUtils.getStatusColor(
-                          booking.status
+                          booking.jobType
                         )} cursor-pointer hover:shadow-lg transition-all duration-200`}
                         onClick={() => openModal(booking)}
                       >
@@ -931,9 +929,7 @@ const BookingDashboard: React.FC = () => {
                       </div>
                     ))}
                     {stoppageBookings.length === 0 && (
-                      <div className="text-xs text-gray-400 text-center py-4">
-                        No stoppages
-                      </div>
+                      <div className="text-xs text-gray-400 text-center py-4"></div>
                     )}
                   </div>
                 </div>
