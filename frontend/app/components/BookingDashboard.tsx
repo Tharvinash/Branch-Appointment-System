@@ -517,7 +517,7 @@ const BookingDashboard: React.FC = () => {
       {/* Queuing, Waiting For QC, Repair Completion Table */}
       <div className="bg-white border border-gray-300 rounded-xl overflow-hidden shadow-lg mb-4">
         {/* Header Row */}
-        <div className="grid grid-cols-3 bg-toyota-gray border-b-2 border-gray-300 shadow-sm">
+        <div className="grid grid-cols-4 bg-toyota-gray border-b-2 border-gray-300 shadow-sm">
           <div className="col-span-1 p-3 border-r-2 border-gray-300 bg-toyota-gray">
             <div className="text-xs font-bold text-toyota-black text-center">
               Queuing
@@ -533,9 +533,14 @@ const BookingDashboard: React.FC = () => {
               Repair Completion
             </div>
           </div>
+          <div className="col-span-1 p-3 border-r-2 border-gray-300 bg-toyota-gray">
+            <div className="text-xs font-bold text-toyota-black text-center">
+              Job Stoppage
+            </div>
+          </div>
         </div>
         {/* Content Row */}
-        <div className="grid grid-cols-3 min-h-64">
+        <div className="grid grid-cols-4 min-h-64">
           {/* Queuing Column */}
           <div className="col-span-1 p-4 border-r-2 border-gray-300 bg-[#fef2f2] overflow-y-auto max-h-64">
             <div className="space-y-2">
@@ -645,6 +650,48 @@ const BookingDashboard: React.FC = () => {
               )}
             </div>
           </div>
+
+          {/* Job Stoppage Column */}
+          <div className="col-span-1 p-4 border-r-2 border-gray-300 bg-red-50 overflow-y-auto max-h-64">
+            <div className="space-y-2">
+              {bookings
+                .filter((b) => b.status === "JOB_STOPPAGE")
+                .map((booking) => (
+                  <div
+                    key={booking.id}
+                    className={`p-2 rounded-lg border-l-4 shadow-sm ${bookingUtils.getStatusColor(
+                      booking.jobType
+                    )} cursor-pointer hover:shadow-lg transition-all duration-200`}
+                    onClick={() => openModal(booking)}
+                  >
+                    <div className="text-xs font-bold truncate">
+                      {booking.carRegNo}
+                    </div>
+                    <div className="text-xs truncate">
+                      SVA: {getServiceAdvisorName(booking.serviceAdvisorId)}
+                    </div>
+                    <div className="text-xs truncate">
+                      {new Date(booking.checkinDate).toLocaleDateString()} →{" "}
+                      {new Date(booking.promiseDate).toLocaleDateString()}
+                    </div>
+                    <div className="text-xs font-medium truncate">
+                      {bookingUtils.getJobTypeText(booking.jobType)}
+                    </div>
+                    {booking.stoppageReason && (
+                      <div className="text-xs text-red-600 font-medium truncate mt-1">
+                        Reason: {booking.stoppageReason}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              {bookings.filter((b) => b.status === "JOB_STOPPAGE").length ===
+                0 && (
+                <div className="text-xs text-gray-400 text-center py-8">
+                  No jobs stopped
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -685,12 +732,6 @@ const BookingDashboard: React.FC = () => {
               ))}
             </div>
           </div>
-          {/* Job Stoppage Column Header */}
-          <div className="w-32 p-3 border-r-2 border-gray-300 bg-toyota-gray flex-shrink-0">
-            <div className="text-xs font-bold text-toyota-black text-center h-40 flex items-center justify-center">
-              Job Stoppage
-            </div>
-          </div>
         </div>
 
         {/* Bay Rows */}
@@ -700,10 +741,6 @@ const BookingDashboard: React.FC = () => {
             // Only show NEXT_JOB bookings assigned to this specific bay
             const nextJobBookings = bookings.filter(
               (b) => b.status === "NEXT_JOB" && b.bayId === bay.id
-            );
-            // Only show JOB_STOPPAGE bookings assigned to this specific bay
-            const stoppageBookings = bookings.filter(
-              (b) => b.status === "JOB_STOPPAGE" && b.bayId === bay.id
             );
 
             return (
@@ -748,8 +785,17 @@ const BookingDashboard: React.FC = () => {
                 {/* Bay Information Column - Fixed Width */}
                 <div className="w-32 p-3 border-r-2 border-gray-300 bg-inherit flex-shrink-0">
                   <div className="h-40 flex flex-col justify-center">
-                    <div className="text-sm font-bold text-toyota-black">
-                      {bay.name.name}
+                    <div className="flex items-center gap-2">
+                      <div
+                        className="w-3 h-3 rounded-full border border-gray-300 shadow-sm flex-shrink-0"
+                        style={{
+                          backgroundColor: getBayColor(bay.name.name),
+                        }}
+                        title={bay.name.name}
+                      ></div>
+                      <div className="text-sm font-bold text-toyota-black">
+                        {bay.name.name}
+                      </div>
                     </div>
                     <div className="text-xs text-toyota-text-secondary font-medium">
                       {bay.number}
@@ -873,7 +919,8 @@ const BookingDashboard: React.FC = () => {
                                     }
                                     if (step.fromProcess?.name) {
                                       const bayName =
-                                        typeof step.fromProcess.name === "string"
+                                        typeof step.fromProcess.name ===
+                                        "string"
                                           ? step.fromProcess.name
                                           : step.fromProcess.name.name;
                                       uniqueBays.add(bayName);
@@ -904,43 +951,6 @@ const BookingDashboard: React.FC = () => {
                           </div>
                         );
                       })}
-                  </div>
-                </div>
-
-                {/* Job Stoppage Column */}
-                <div className="w-32 p-2 border-r-2 border-gray-300 bg-red-50 flex-shrink-0 overflow-y-auto">
-                  <div className="space-y-2">
-                    {stoppageBookings.map((booking) => (
-                      <div
-                        key={booking.id}
-                        className={`p-2 rounded-lg border-l-4 shadow-sm ${bookingUtils.getStatusColor(
-                          booking.jobType
-                        )} cursor-pointer hover:shadow-lg transition-all duration-200`}
-                        onClick={() => openModal(booking)}
-                      >
-                        <div className="text-xs font-bold truncate">
-                          {booking.carRegNo}
-                        </div>
-                        <div className="text-xs truncate">
-                          SVA: {getServiceAdvisorName(booking.serviceAdvisorId)}
-                        </div>
-                        <div className="text-xs truncate">
-                          {new Date(booking.checkinDate).toLocaleDateString()} →{" "}
-                          {new Date(booking.promiseDate).toLocaleDateString()}
-                        </div>
-                        <div className="text-xs font-medium truncate">
-                          {bookingUtils.getJobTypeText(booking.jobType)}
-                        </div>
-                        {booking.stoppageReason && (
-                          <div className="text-xs text-red-600 font-medium truncate mt-1">
-                            Reason: {booking.stoppageReason}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                    {stoppageBookings.length === 0 && (
-                      <div className="text-xs text-gray-400 text-center py-4"></div>
-                    )}
                   </div>
                 </div>
               </div>

@@ -9,7 +9,7 @@ export interface Booking {
   promiseDate: string; // ISO string format
   serviceAdvisorId: number;
   bayId: number;
-  jobType: "LIGHT" | "MEDIUM" | "HEAVY";
+  jobType: "LIGHT" | "MEDIUM" | "HEAVY" | "WINDScreen";
   status:
     | "QUEUING"
     | "BAY_QUEUE"
@@ -93,7 +93,7 @@ export interface CreateBookingRequest {
   promiseDate: string; // ISO string format
   serviceAdvisorId: number;
   bayId: number;
-  jobType: "LIGHT" | "MEDIUM" | "HEAVY";
+  jobType: "LIGHT" | "MEDIUM" | "HEAVY" | "WINDScreen";
   status:
     | "QUEUING"
     | "BAY_QUEUE"
@@ -751,6 +751,8 @@ export const bookingUtils = {
         return "bg-yellow-100 border-yellow-300 text-yellow-800";
       case "HEAVY":
         return "bg-red-100 border-red-300 text-red-800";
+      case "WINDScreen":
+        return "bg-blue-100 border-blue-300 text-blue-800";
       default:
         return "bg-gray-100 border-gray-300 text-gray-800";
     }
@@ -818,6 +820,8 @@ export const bookingUtils = {
         return "Medium";
       case "HEAVY":
         return "Heavy";
+      case "WINDScreen":
+        return "Windscreen";
       default:
         return "Unknown";
     }
@@ -831,6 +835,8 @@ export const bookingUtils = {
         return "bg-yellow-100 border-yellow-300 text-yellow-800";
       case "HEAVY":
         return "bg-red-100 border-red-300 text-red-800";
+      case "WINDScreen":
+        return "bg-blue-100 border-blue-300 text-blue-800";
       default:
         return "bg-gray-100 border-gray-300 text-gray-800";
     }
@@ -878,7 +884,7 @@ export const bookingValidators = {
 
   jobType: (jobType: string): string | null => {
     if (!jobType) return "Job type is required";
-    if (!["LIGHT", "MEDIUM", "HEAVY"].includes(jobType))
+    if (!["LIGHT", "MEDIUM", "HEAVY", "WINDScreen"].includes(jobType))
       return "Invalid job type";
     return null;
   },

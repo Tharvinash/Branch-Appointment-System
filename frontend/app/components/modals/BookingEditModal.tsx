@@ -59,7 +59,7 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
     promiseDate: booking?.promiseDate || "",
     serviceAdvisorId: booking?.serviceAdvisorId || 0,
     bayId: booking?.bayId || 0,
-    jobType: booking?.jobType || "MEDIUM",
+    jobType: booking?.jobType || ("MEDIUM" as "LIGHT" | "MEDIUM" | "HEAVY" | "WINDScreen"),
     status: booking?.status || "QUEUING",
     jobStartTime: booking?.jobStartTime || "",
     jobEndTime: booking?.jobEndTime || "",
@@ -466,6 +466,15 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
   const handleChangeBay = async () => {
     if (!booking) return;
 
+    // Show delay reason input if job was extended
+    if (timeExtensions.length > 0 && !delayReason.trim()) {
+      setShowDelayReasonInput(true);
+      setApiError(
+        "Please provide a reason for the delay before changing bay."
+      );
+      return;
+    }
+
     // Validate form
     const errors: Record<string, string> = {};
     if (!changeBayForm.bayId || changeBayForm.bayId === 0) {
@@ -499,8 +508,14 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
 
     setIsChangingBay(true);
     setChangeBayErrors({});
+    setApiError("");
 
     try {
+      // Update delay reason if provided
+      if (delayReason.trim()) {
+        await bookingAPI.updateDelayReason(booking.id, delayReason.trim());
+      }
+
       // Format times to HH:mm:ss
       const startTimeParts = changeBayForm.jobStartTime.split(":");
       const endTimeParts = changeBayForm.jobEndTime.split(":");
@@ -525,6 +540,8 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
       const response = await bookingAPI.updateBooking(booking.id, updateData);
 
       if (response.success) {
+        setDelayReason("");
+        setShowDelayReasonInput(false);
         setIsChangeBayModalOpen(false);
         setChangeBayForm({ bayId: 0, jobStartTime: "", jobEndTime: "" });
         setChangeBayErrors({});
@@ -816,7 +833,7 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
                   onValueChange={(value) =>
                     handleInputChange(
                       "jobType",
-                      value as "LIGHT" | "MEDIUM" | "HEAVY",
+                      value as "LIGHT" | "MEDIUM" | "HEAVY" | "WINDScreen",
                     )
                   }
                 >
@@ -829,6 +846,7 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
                     <SelectItem value="LIGHT">Light</SelectItem>
                     <SelectItem value="MEDIUM">Medium</SelectItem>
                     <SelectItem value="HEAVY">Heavy</SelectItem>
+                    <SelectItem value="WINDScreen">Windscreen</SelectItem>
                   </SelectContent>
                 </Select>
                 {errors.jobType && (
@@ -1163,15 +1181,15 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
       >
         <DialogContent className="sm:max-w-[400px]">
           <DialogHeader>
-            <DialogTitle>Extend Job End Time</DialogTitle>
+            <DialogTitle>Extend Production</DialogTitle>
             <DialogDescription>
-              Extend the end time for booking {booking?.carRegNo}
+              Extend the promise time for booking {booking?.carRegNo}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="newEndTime">
-                New End Time <span className="text-red-500">*</span>
+                New Promise Time <span className="text-red-500">*</span>
               </Label>
               <Input
                 id="newEndTime"

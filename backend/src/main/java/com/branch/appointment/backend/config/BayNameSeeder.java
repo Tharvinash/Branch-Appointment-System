@@ -21,7 +21,7 @@ public class BayNameSeeder implements CommandLineRunner {
     // Updated bay names in the desired order
     List<String> expectedBayNames = List.of(
         "Surface Preparation (SP)",
-        "Spray Booth (SB) & Colour Matching",
+        "Spray Booth (SB)",
         "Polishing (PL)",
         "Assembly/Disassembly (A/D)",
         "Panel Beating (PB)",
@@ -37,19 +37,19 @@ public class BayNameSeeder implements CommandLineRunner {
     } else {
       // Update existing bay names and add new ones
       // Map of old names to new names for updates
-      Map<String, String> nameUpdates = Map.of(
-          "Spray Booth (SB)", "Spray Booth (SB) & Colour Matching"
-      );
-
-      // Update existing bay names that need name changes
-      for (Map.Entry<String, String> entry : nameUpdates.entrySet()) {
-        Optional<BayNameEntity> existing = bayNameRepository.findByBayName(entry.getKey());
-        if (existing.isPresent()) {
-          BayNameEntity bayName = existing.get();
-          bayName.setBayName(entry.getValue());
-          bayNameRepository.save(bayName);
-        }
-      }
+//      Map<String, String> nameUpdates = Map.of(
+//          "Spray Booth (SB)", "Spray Booth (SB) & Colour Matching"
+//      );
+//
+//      // Update existing bay names that need name changes
+//      for (Map.Entry<String, String> entry : nameUpdates.entrySet()) {
+//        Optional<BayNameEntity> existing = bayNameRepository.findByBayName(entry.getKey());
+//        if (existing.isPresent()) {
+//          BayNameEntity bayName = existing.get();
+//          bayName.setBayName(entry.getValue());
+//          bayNameRepository.save(bayName);
+//        }
+//      }
 
       // Add new bay names that don't exist
       for (String expectedName : expectedBayNames) {

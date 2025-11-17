@@ -4,7 +4,7 @@
 export const getBayColor = (bayName: string): string => {
   const colorMap: Record<string, string> = {
     "Surface Preparation (SP)": "#3B82F6", // Blue
-    "Spray Booth (SB) & Colour Matching": "#10B981", // Green
+    "Spray Booth (SB)": "#10B981", // Green
     "Polishing (PL)": "#F59E0B", // Amber
     "Assembly/Disassembly (A/D)": "#8B5CF6", // Purple
     "Panel Beating (PB)": "#EF4444", // Red
@@ -20,7 +20,7 @@ export const getBayColor = (bayName: string): string => {
 export const getBayColorClass = (bayName: string): string => {
   const classMap: Record<string, string> = {
     "Surface Preparation (SP)": "bg-blue-500",
-    "Spray Booth (SB) & Colour Matching": "bg-green-500",
+    "Spray Booth (SB)": "bg-green-500",
     "Polishing (PL)": "bg-amber-500",
     "Assembly/Disassembly (A/D)": "bg-purple-500",
     "Panel Beating (PB)": "bg-red-500",

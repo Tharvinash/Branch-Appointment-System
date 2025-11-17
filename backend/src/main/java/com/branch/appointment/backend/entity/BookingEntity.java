@@ -42,7 +42,7 @@ public class BookingEntity {
 
   @Enumerated(EnumType.STRING)
   @Column(name = "Job_Type")
-  private JobTypeEnum jobType; // LIGHT, MEDIUM, HEAVY
+  private JobTypeEnum jobType; // LIGHT, MEDIUM, HEAVY, WINDScreen
 
   @Enumerated(EnumType.STRING)
   @Column(name = "Status")
