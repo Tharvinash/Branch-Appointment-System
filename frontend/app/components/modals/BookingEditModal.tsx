@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   bookingUtils,
   Booking,
@@ -28,6 +28,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import DelayReasonModal from "./DelayReasonModal";
 
 interface Bay {
   id: string;
@@ -76,8 +77,9 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
   const [extendTimeReason, setExtendTimeReason] = useState("");
   const [timeExtensions, setTimeExtensions] = useState<TimeExtension[]>([]);
   const [isLoadingExtensions, setIsLoadingExtensions] = useState(false);
-  const [delayReason, setDelayReason] = useState("");
-  const [showDelayReasonInput, setShowDelayReasonInput] = useState(false);
+  const [hasDelayReason, setHasDelayReason] = useState(false);
+  const [isDelayReasonModalOpen, setIsDelayReasonModalOpen] = useState(false);
+  const [pendingAction, setPendingAction] = useState<"complete" | "changeBay" | null>(null);
   const [extendTimeError, setExtendTimeError] = useState("");
   const [isExtendingTime, setIsExtendingTime] = useState(false);
   const [isChangeBayModalOpen, setIsChangeBayModalOpen] = useState(false);
@@ -90,6 +92,16 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
     Record<string, string>
   >({});
   const [isChangingBay, setIsChangingBay] = useState(false);
+
+  const currentBayHasExtension = useMemo(() => {
+    if (!booking) return false;
+    return timeExtensions.some(
+      (extension) =>
+        extension.bayId != null && extension.bayId === booking.bayId
+    );
+  }, [booking, timeExtensions]);
+
+  const requiresDelayReason = currentBayHasExtension && !hasDelayReason;
 
   // Fetch service advisors and bays on component mount
   useEffect(() => {
@@ -134,17 +146,43 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
     }
   }, [open, booking]);
 
-  // Fetch time extensions
+  // Fetch time extensions and check delay reason for current bay
   const fetchTimeExtensions = async () => {
     if (!booking) return;
     setIsLoadingExtensions(true);
     try {
-      const response = await bookingAPI.getTimeExtensions(booking.id);
-      if (response.success && response.data) {
-        setTimeExtensions(response.data);
+      const [extensionsResponse, historyResponse] = await Promise.all([
+        bookingAPI.getTimeExtensions(booking.id),
+        bookingAPI.getBookingHistory(booking.id),
+      ]);
+      
+      if (extensionsResponse.success && extensionsResponse.data) {
+        setTimeExtensions(extensionsResponse.data);
+      }
+      
+      // Check if delay reason exists for the CURRENT bay's process entry
+      // Delay reason is tied to the bay, so we check the most recent process entry for current bay
+      if (historyResponse.success && historyResponse.data && historyResponse.data.length > 0) {
+        const matchingProcess = historyResponse.data
+          .filter((process) => process.toProcess?.id === booking.bayId)
+          .sort(
+            (a, b) =>
+              new Date(b.changedAt).getTime() - new Date(a.changedAt).getTime()
+          )[0];
+
+        if (matchingProcess) {
+          setHasDelayReason(
+            !!(matchingProcess.delayReason && matchingProcess.delayReason.trim() !== "")
+          );
+        } else {
+          setHasDelayReason(false);
+        }
+      } else {
+        setHasDelayReason(false);
       }
     } catch (error) {
-      console.error("Error fetching time extensions:", error);
+      console.error("Error fetching time extensions or process history:", error);
+      setHasDelayReason(false);
     } finally {
       setIsLoadingExtensions(false);
     }
@@ -272,32 +310,16 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
   const handleAssignToNextJob = async () => {
     if (!booking) return;
 
-    // Show delay reason input if job was extended and moving to next bay/process
-    if (timeExtensions.length > 0 && !delayReason.trim()) {
-      setShowDelayReasonInput(true);
-      setApiError(
-        "Please provide a reason for the delay before moving to next job."
-      );
-      return;
-    }
-
     setIsLoading(true);
     setApiError("");
 
     try {
-      // Update delay reason if provided
-      if (delayReason.trim()) {
-        await bookingAPI.updateDelayReason(booking.id, delayReason.trim());
-      }
-
       const response = await bookingAPI.workflow.moveToNextJob(
         booking.id,
         formData.bayId
       );
 
       if (response.success) {
-        setDelayReason("");
-        setShowDelayReasonInput(false);
         onSuccess();
       } else {
         setApiError(response.message || "Failed to move to next job");
@@ -320,29 +342,13 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
   const handleCompleteJob = async () => {
     if (!booking) return;
 
-    // Show delay reason input if job was extended
-    if (timeExtensions.length > 0 && !delayReason.trim()) {
-      setShowDelayReasonInput(true);
-      setApiError(
-        "Please provide a reason for the delay before completing the job."
-      );
-      return;
-    }
-
     setIsLoading(true);
     setApiError("");
 
     try {
-      // Update delay reason if provided
-      if (delayReason.trim()) {
-        await bookingAPI.updateDelayReason(booking.id, delayReason.trim());
-      }
-
       const response = await bookingAPI.workflow.completeJob(booking.id);
 
       if (response.success) {
-        setDelayReason("");
-        setShowDelayReasonInput(false);
         onSuccess();
       } else {
         setApiError(response.message || "Failed to complete job");
@@ -422,6 +428,7 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
         setExtendTimeReason("");
         setExtendTimeError("");
         setIsExtendTimeModalOpen(false);
+        // Re-fetch to check delay reason for current bay (time extension may require delay reason)
         await fetchTimeExtensions();
         onSuccess(); // Refresh booking data
       } else {
@@ -463,17 +470,32 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
     }
   };
 
+  const handleDelayReasonConfirm = async (delayReason: string) => {
+    if (!booking || !pendingAction) return;
+
+    // Delay reason is already updated in the modal, mark as provided
+    setHasDelayReason(true);
+
+    // Now proceed with the action
+    if (pendingAction === "complete") {
+      await handleCompleteJob();
+    } else if (pendingAction === "changeBay") {
+      // Open change bay modal
+      setChangeBayForm({
+        bayId: booking.bayId || 0,
+        jobStartTime: booking.jobStartTime?.slice(0, 5) || "",
+        jobEndTime: booking.jobEndTime?.slice(0, 5) || "",
+      });
+      setChangeBayErrors({});
+      setIsChangeBayModalOpen(true);
+    }
+    
+    // Reset state
+    setPendingAction(null);
+  };
+
   const handleChangeBay = async () => {
     if (!booking) return;
-
-    // Show delay reason input if job was extended
-    if (timeExtensions.length > 0 && !delayReason.trim()) {
-      setShowDelayReasonInput(true);
-      setApiError(
-        "Please provide a reason for the delay before changing bay."
-      );
-      return;
-    }
 
     // Validate form
     const errors: Record<string, string> = {};
@@ -511,11 +533,6 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
     setApiError("");
 
     try {
-      // Update delay reason if provided
-      if (delayReason.trim()) {
-        await bookingAPI.updateDelayReason(booking.id, delayReason.trim());
-      }
-
       // Format times to HH:mm:ss
       const startTimeParts = changeBayForm.jobStartTime.split(":");
       const endTimeParts = changeBayForm.jobEndTime.split(":");
@@ -540,11 +557,11 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
       const response = await bookingAPI.updateBooking(booking.id, updateData);
 
       if (response.success) {
-        setDelayReason("");
-        setShowDelayReasonInput(false);
         setIsChangeBayModalOpen(false);
         setChangeBayForm({ bayId: 0, jobStartTime: "", jobEndTime: "" });
         setChangeBayErrors({});
+        // Refresh data to check if delay reason exists (should remain true if already provided)
+        await fetchTimeExtensions();
         onSuccess(); // Refresh booking data
       } else {
         setChangeBayErrors({
@@ -950,51 +967,6 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
             </div>
           )}
 
-          {/* Delay Reason Input - Show when completing job with extensions */}
-          {showDelayReasonInput && (
-            <div className="pt-4 border-t border-gray-200">
-              <h4 className="text-sm font-semibold text-toyota-black mb-3">
-                Delay Reason Required
-              </h4>
-              <div className="space-y-2">
-                <Label htmlFor="delayReason">
-                  Please provide a reason for the delay{" "}
-                  <span className="text-red-500">*</span>
-                </Label>
-                <textarea
-                  id="delayReason"
-                  value={delayReason}
-                  onChange={(e) => setDelayReason(e.target.value)}
-                  className="w-full p-2 border border-gray-300 rounded-md text-sm min-h-[80px]"
-                  placeholder="Enter reason for delay..."
-                />
-                <div className="flex gap-2">
-                  <Button
-                    type="button"
-                    size="sm"
-                    onClick={handleCompleteJob}
-                    disabled={!delayReason.trim() || isLoading}
-                    className="btn-toyota-primary text-white"
-                  >
-                    Complete with Reason
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setShowDelayReasonInput(false);
-                      setDelayReason("");
-                      setApiError("");
-                    }}
-                  >
-                    Cancel
-                  </Button>
-                </div>
-              </div>
-            </div>
-          )}
-
           {/* Workflow Actions */}
           <div className="pt-4 border-t border-gray-200">
             <h4 className="text-sm font-semibold text-toyota-black mb-3">
@@ -1008,14 +980,20 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
                   variant="outline"
                   size="sm"
                   onClick={() => {
-                    // Initialize form with current booking data
-                    setChangeBayForm({
-                      bayId: booking.bayId || 0,
-                      jobStartTime: booking.jobStartTime?.slice(0, 5) || "",
-                      jobEndTime: booking.jobEndTime?.slice(0, 5) || "",
-                    });
-                    setChangeBayErrors({});
-                    setIsChangeBayModalOpen(true);
+                    // Check if time was extended for current bay and delay reason not provided
+                    if (requiresDelayReason) {
+                      setPendingAction("changeBay");
+                      setIsDelayReasonModalOpen(true);
+                    } else {
+                      // Initialize form with current booking data
+                      setChangeBayForm({
+                        bayId: booking.bayId || 0,
+                        jobStartTime: booking.jobStartTime?.slice(0, 5) || "",
+                        jobEndTime: booking.jobEndTime?.slice(0, 5) || "",
+                      });
+                      setChangeBayErrors({});
+                      setIsChangeBayModalOpen(true);
+                    }
                   }}
                   disabled={isLoading}
                   className="btn-toyota-outline"
@@ -1039,9 +1017,10 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
                     } else if (action === "Pause Job") {
                       handlePauseJob();
                     } else if (action === "Complete Job") {
-                      // Check if time was extended, show delay reason input
-                      if (timeExtensions.length > 0) {
-                        setShowDelayReasonInput(true);
+                      // Check if time was extended for current bay and delay reason not provided
+                      if (requiresDelayReason) {
+                        setPendingAction("complete");
+                        setIsDelayReasonModalOpen(true);
                       } else {
                         handleCompleteJob();
                       }
@@ -1476,6 +1455,20 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delay Reason Modal */}
+      {booking && pendingAction && (
+        <DelayReasonModal
+          open={isDelayReasonModalOpen}
+          onClose={() => {
+            setIsDelayReasonModalOpen(false);
+            setPendingAction(null);
+          }}
+          onConfirm={handleDelayReasonConfirm}
+          bookingId={booking.id}
+          action={pendingAction}
+        />
+      )}
     </>
   );
 };

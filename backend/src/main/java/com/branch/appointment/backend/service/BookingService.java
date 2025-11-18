@@ -200,6 +200,7 @@ public class BookingService {
     // Create time extension record
     TimeExtensionEntity extension = new TimeExtensionEntity();
     extension.setBooking(booking);
+    extension.setBay(booking.getBay());
     extension.setPreviousEndTime(previousEndTime);
     extension.setNewEndTime(newEndTime);
     extension.setExtendedAt(LocalDateTime.now());
@@ -214,6 +215,7 @@ public class BookingService {
     return TimeExtensionDto.builder()
         .id(extension.getId())
         .bookingId(bookingId)
+        .bayId(booking.getBay() != null ? booking.getBay().getId() : null)
         .previousEndTime(previousEndTime)
         .newEndTime(newEndTime)
         .extendedAt(extension.getExtendedAt())
@@ -228,6 +230,7 @@ public class BookingService {
         .map(e -> TimeExtensionDto.builder()
             .id(e.getId())
             .bookingId(bookingId)
+            .bayId(e.getBay() != null ? e.getBay().getId() : null)
             .previousEndTime(e.getPreviousEndTime())
             .newEndTime(e.getNewEndTime())
             .extendedAt(e.getExtendedAt())

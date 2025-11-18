@@ -57,6 +57,7 @@ export interface ProcessStep {
 export interface TimeExtension {
   id: number;
   bookingId: number;
+  bayId?: number;
   previousEndTime: string; // Time format HH:mm:ss
   newEndTime: string; // Time format HH:mm:ss
   extendedAt: string; // ISO string format

@@ -15,6 +15,7 @@ import java.time.LocalTime;
 public class TimeExtensionDto {
   private Long id;
   private Long bookingId;
+  private Long bayId;
   private LocalTime previousEndTime;
   private LocalTime newEndTime;
   private LocalDateTime extendedAt;

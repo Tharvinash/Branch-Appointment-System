@@ -25,6 +25,10 @@ public class TimeExtensionEntity {
   @JoinColumn(name = "Booking_Id", nullable = false)
   private BookingEntity booking;
 
+  @ManyToOne
+  @JoinColumn(name = "Bay_Id")
+  private BayEntity bay;
+
   @Column(name = "Previous_End_Time", nullable = false)
   private LocalTime previousEndTime;
 
