@@ -112,7 +112,7 @@ export interface UpdateBookingRequest {
   promiseDate?: string;
   serviceAdvisorId?: number;
   bayId?: number;
-  jobType?: "LIGHT" | "MEDIUM" | "HEAVY";
+  jobType?: "LIGHT" | "MEDIUM" | "HEAVY" | "WINDScreen";
   status?:
     | "QUEUING"
     | "BAY_QUEUE"
@@ -910,19 +910,19 @@ export const bookingValidators = {
     if (!time) return null; // Optional fields can be empty
     const timeStr = time.length >= 5 ? time.slice(0, 5) : time; // Get HH:mm format
     const [hours, minutes] = timeStr.split(":").map(Number);
-    
+
     if (isNaN(hours) || isNaN(minutes)) {
       return `${fieldName} format is invalid`;
     }
-    
+
     const totalMinutes = hours * 60 + minutes;
     const minMinutes = 8 * 60; // 08:00
     const maxMinutes = 19 * 60; // 19:00
-    
+
     if (totalMinutes < minMinutes || totalMinutes > maxMinutes) {
       return `${fieldName} must be between 08:00 and 19:00`;
     }
-    
+
     return null;
   },
 };
