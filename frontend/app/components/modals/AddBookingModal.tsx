@@ -98,6 +98,23 @@ const AddBookingModal: React.FC<AddBookingModalProps> = ({
     const jobTypeError = bookingValidators.jobType(formData.jobType);
     if (jobTypeError) newErrors.jobType = jobTypeError;
 
+    // Validate time ranges (08:00 - 19:00)
+    if (formData.jobStartTime) {
+      const startTimeError = bookingValidators.timeRange(
+        formData.jobStartTime,
+        "Job start time"
+      );
+      if (startTimeError) newErrors.jobStartTime = startTimeError;
+    }
+
+    if (formData.jobEndTime) {
+      const endTimeError = bookingValidators.timeRange(
+        formData.jobEndTime,
+        "Job end time"
+      );
+      if (endTimeError) newErrors.jobEndTime = endTimeError;
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -264,7 +281,7 @@ const AddBookingModal: React.FC<AddBookingModalProps> = ({
                 <SelectContent>
                   {serviceAdvisors.map((advisor) => (
                     <SelectItem key={advisor.id} value={advisor.id.toString()}>
-                      {advisor.name} (ID: {advisor.id})
+                      {advisor.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -291,6 +308,7 @@ const AddBookingModal: React.FC<AddBookingModalProps> = ({
                 onChange={(e) =>
                   handleInputChange("checkinDate", e.target.value)
                 }
+                min={new Date().toISOString().split("T")[0]}
                 className={`w-full ${
                   errors.checkinDate ? "border-red-500" : ""
                 }`}
@@ -311,6 +329,11 @@ const AddBookingModal: React.FC<AddBookingModalProps> = ({
                 value={formData.promiseDate}
                 onChange={(e) =>
                   handleInputChange("promiseDate", e.target.value)
+                }
+                min={
+                  formData.checkinDate
+                    ? formData.checkinDate
+                    : new Date().toISOString().split("T")[0]
                 }
                 className={`w-full ${
                   errors.promiseDate ? "border-red-500" : ""
@@ -400,9 +423,16 @@ const AddBookingModal: React.FC<AddBookingModalProps> = ({
                 onChange={(e) =>
                   handleInputChange("jobStartTime", e.target.value)
                 }
+                min="08:00"
+                max="19:00"
                 placeholder="08:00"
-                className="w-full"
+                className={`w-full ${
+                  errors.jobStartTime ? "border-red-500" : ""
+                }`}
               />
+              {errors.jobStartTime && (
+                <p className="text-red-500 text-xs">{errors.jobStartTime}</p>
+              )}
             </div>
 
             {/* Job End Time */}
@@ -415,9 +445,16 @@ const AddBookingModal: React.FC<AddBookingModalProps> = ({
                 onChange={(e) =>
                   handleInputChange("jobEndTime", e.target.value)
                 }
+                min={formData.jobStartTime || "08:00"}
+                max="19:00"
                 placeholder="17:00"
-                className="w-full"
+                className={`w-full ${
+                  errors.jobEndTime ? "border-red-500" : ""
+                }`}
               />
+              {errors.jobEndTime && (
+                <p className="text-red-500 text-xs">{errors.jobEndTime}</p>
+              )}
             </div>
           </div>
 

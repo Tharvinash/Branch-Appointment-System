@@ -60,7 +60,9 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
     promiseDate: booking?.promiseDate || "",
     serviceAdvisorId: booking?.serviceAdvisorId || 0,
     bayId: booking?.bayId || 0,
-    jobType: booking?.jobType || ("MEDIUM" as "LIGHT" | "MEDIUM" | "HEAVY" | "WINDScreen"),
+    jobType:
+      booking?.jobType ||
+      ("MEDIUM" as "LIGHT" | "MEDIUM" | "HEAVY" | "WINDScreen"),
     status: booking?.status || "QUEUING",
     jobStartTime: booking?.jobStartTime || "",
     jobEndTime: booking?.jobEndTime || "",
@@ -79,7 +81,9 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
   const [isLoadingExtensions, setIsLoadingExtensions] = useState(false);
   const [hasDelayReason, setHasDelayReason] = useState(false);
   const [isDelayReasonModalOpen, setIsDelayReasonModalOpen] = useState(false);
-  const [pendingAction, setPendingAction] = useState<"complete" | "changeBay" | null>(null);
+  const [pendingAction, setPendingAction] = useState<
+    "complete" | "changeBay" | null
+  >(null);
   const [extendTimeError, setExtendTimeError] = useState("");
   const [isExtendingTime, setIsExtendingTime] = useState(false);
   const [isChangeBayModalOpen, setIsChangeBayModalOpen] = useState(false);
@@ -155,14 +159,18 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
         bookingAPI.getTimeExtensions(booking.id),
         bookingAPI.getBookingHistory(booking.id),
       ]);
-      
+
       if (extensionsResponse.success && extensionsResponse.data) {
         setTimeExtensions(extensionsResponse.data);
       }
-      
+
       // Check if delay reason exists for the CURRENT bay's process entry
       // Delay reason is tied to the bay, so we check the most recent process entry for current bay
-      if (historyResponse.success && historyResponse.data && historyResponse.data.length > 0) {
+      if (
+        historyResponse.success &&
+        historyResponse.data &&
+        historyResponse.data.length > 0
+      ) {
         const matchingProcess = historyResponse.data
           .filter((process) => process.toProcess?.id === booking.bayId)
           .sort(
@@ -172,7 +180,10 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
 
         if (matchingProcess) {
           setHasDelayReason(
-            !!(matchingProcess.delayReason && matchingProcess.delayReason.trim() !== "")
+            !!(
+              matchingProcess.delayReason &&
+              matchingProcess.delayReason.trim() !== ""
+            )
           );
         } else {
           setHasDelayReason(false);
@@ -181,7 +192,10 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
         setHasDelayReason(false);
       }
     } catch (error) {
-      console.error("Error fetching time extensions or process history:", error);
+      console.error(
+        "Error fetching time extensions or process history:",
+        error
+      );
       setHasDelayReason(false);
     } finally {
       setIsLoadingExtensions(false);
@@ -242,6 +256,23 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
 
     const jobTypeError = bookingValidators.jobType(formData.jobType);
     if (jobTypeError) newErrors.jobType = jobTypeError;
+
+    // Validate time ranges (08:00 - 19:00)
+    if (formData.jobStartTime) {
+      const startTimeError = bookingValidators.timeRange(
+        formData.jobStartTime,
+        "Job start time"
+      );
+      if (startTimeError) newErrors.jobStartTime = startTimeError;
+    }
+
+    if (formData.jobEndTime) {
+      const endTimeError = bookingValidators.timeRange(
+        formData.jobEndTime,
+        "Job end time"
+      );
+      if (endTimeError) newErrors.jobEndTime = endTimeError;
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -387,6 +418,16 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
       return;
     }
 
+    // Validate time range (08:00 - 19:00)
+    const timeRangeError = bookingValidators.timeRange(
+      newEndTime,
+      "New end time"
+    );
+    if (timeRangeError) {
+      setExtendTimeError(timeRangeError);
+      return;
+    }
+
     // Validate that reason is provided
     if (!extendTimeReason.trim()) {
       setExtendTimeError("Please provide a reason for extending the time");
@@ -448,6 +489,29 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
   const startJob = async () => {
     if (!booking) return;
 
+    // Validate time ranges before starting job
+    if (formData.jobStartTime) {
+      const startTimeError = bookingValidators.timeRange(
+        formData.jobStartTime,
+        "Job start time"
+      );
+      if (startTimeError) {
+        setApiError(startTimeError);
+        return;
+      }
+    }
+
+    if (formData.jobEndTime) {
+      const endTimeError = bookingValidators.timeRange(
+        formData.jobEndTime,
+        "Job end time"
+      );
+      if (endTimeError) {
+        setApiError(endTimeError);
+        return;
+      }
+    }
+
     setIsLoading(true);
     setApiError("");
 
@@ -489,7 +553,7 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
       setChangeBayErrors({});
       setIsChangeBayModalOpen(true);
     }
-    
+
     // Reset state
     setPendingAction(null);
   };
@@ -509,8 +573,30 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
       errors.jobEndTime = "Please select an end time";
     }
 
-    // Validate that end time is after start time
-    if (changeBayForm.jobStartTime && changeBayForm.jobEndTime) {
+    // Validate time ranges (08:00 - 19:00)
+    if (changeBayForm.jobStartTime) {
+      const startTimeError = bookingValidators.timeRange(
+        changeBayForm.jobStartTime,
+        "Start time"
+      );
+      if (startTimeError) errors.jobStartTime = startTimeError;
+    }
+
+    if (changeBayForm.jobEndTime) {
+      const endTimeError = bookingValidators.timeRange(
+        changeBayForm.jobEndTime,
+        "End time"
+      );
+      if (endTimeError) errors.jobEndTime = endTimeError;
+    }
+
+    // Validate that end time is after start time (only if both are valid)
+    if (
+      changeBayForm.jobStartTime &&
+      changeBayForm.jobEndTime &&
+      !errors.jobStartTime &&
+      !errors.jobEndTime
+    ) {
       const [startHour, startMin] = changeBayForm.jobStartTime
         .split(":")
         .map(Number);
@@ -719,7 +805,15 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
                     onChange={(e) =>
                       handleInputChange("jobStartTime", e.target.value)
                     }
+                    min="08:00"
+                    max="19:00"
+                    className={errors.jobStartTime ? "border-red-500" : ""}
                   />
+                  {errors.jobStartTime && (
+                    <p className="text-red-500 text-xs">
+                      {errors.jobStartTime}
+                    </p>
+                  )}
                 </div>
 
                 {/* Job End Time */}
@@ -732,7 +826,13 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
                     onChange={(e) =>
                       handleInputChange("jobEndTime", e.target.value)
                     }
+                    min={formData.jobStartTime || "08:00"}
+                    max="19:00"
+                    className={errors.jobEndTime ? "border-red-500" : ""}
                   />
+                  {errors.jobEndTime && (
+                    <p className="text-red-500 text-xs">{errors.jobEndTime}</p>
+                  )}
                 </div>
               </div>
             </div>
@@ -816,6 +916,7 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
                   onChange={(e) =>
                     handleInputChange("checkinDate", e.target.value)
                   }
+                  min={new Date().toISOString().split("T")[0]}
                   className={errors.checkinDate ? "border-red-500" : ""}
                 />
                 {errors.checkinDate && (
@@ -833,6 +934,11 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
                   value={formData.promiseDate}
                   onChange={(e) =>
                     handleInputChange("promiseDate", e.target.value)
+                  }
+                  min={
+                    formData.checkinDate
+                      ? formData.checkinDate
+                      : new Date().toISOString().split("T")[0]
                   }
                   className={errors.promiseDate ? "border-red-500" : ""}
                 />
@@ -1043,7 +1149,7 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
                       : action === "Resume Job"
                       ? "btn-toyota-outline"
                       : action === "Assign to Bay"
-                      ? "btn-toyota-primary text-white"
+                      ? "btn-toyota-primar"
                       : "bg-toyota-gray text-toyota-black hover:bg-toyota-gray-dark border-gray-300"
                   }
                 >
