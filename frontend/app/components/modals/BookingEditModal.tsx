@@ -795,7 +795,7 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
             </DialogDescription>
           </DialogHeader>
           {/* Booking Info */}
-          <div className="mb-6 p-4 bg-toyota-gray rounded-lg">
+          <div className="p-4 bg-toyota-gray rounded-lg">
             <h4 className="text-sm font-semibold text-toyota-black mb-2">
               Booking Details
             </h4>
@@ -823,6 +823,18 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
                 <span className="font-medium">Status:</span>{" "}
                 {bookingUtils.getStatusText(booking.status)}
               </div>
+              {booking.jobStartTime && (
+                <div>
+                  <span className="font-medium">Job Start Time:</span>{" "}
+                  {booking.jobStartTime.slice(0, 5)}
+                </div>
+              )}
+              {booking.jobEndTime && (
+                <div>
+                  <span className="font-medium">Job End Time:</span>{" "}
+                  {booking.jobEndTime.slice(0, 5)}
+                </div>
+              )}
               {booking.status === "JOB_STOPPAGE" && booking.stoppageReason && (
                 <div>
                   <span className="font-medium">Stoppage Reason:</span>{" "}
@@ -1218,7 +1230,13 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
                 <Button
                   key={action}
                   type="button"
-                  variant="outline"
+                  variant={
+                    action === "Assign to Bay" ||
+                    action === "Start Job" ||
+                    action === "Complete Job"
+                      ? "default"
+                      : "outline"
+                  }
                   size="sm"
                   onClick={() => {
                     if (action === "Assign to Bay") {
@@ -1249,18 +1267,19 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
                   }}
                   disabled={isLoading}
                   className={
-                    action === "Complete Job"
-                      ? "btn-toyota-outline"
-                      : action === "Pause Job"
+                    action === "Pause Job"
                       ? "bg-toyota-gray-dark text-toyota-black hover:bg-gray-300 border-gray-300"
                       : action === "Resume Job"
                       ? "btn-toyota-outline"
-                      : action === "Assign to Bay"
-                      ? "btn-toyota-primar"
+                      : action === "Assign to Bay" ||
+                        action === "Start Job" ||
+                        action === "Complete Job"
+                      ? "bg-toyota-red hover:bg-toyota-red-dark text-white"
                       : "bg-toyota-gray text-toyota-black hover:bg-toyota-gray-dark border-gray-300"
                   }
                 >
-                  {isLoading && action === "Assign to Bay" ? (
+                  {isLoading &&
+                  (action === "Assign to Bay" || action === "Start Job") ? (
                     <>
                       <svg
                         className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
@@ -1282,7 +1301,9 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
                           d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                         ></path>
                       </svg>
-                      Assigning...
+                      {action === "Assign to Bay"
+                        ? "Assigning..."
+                        : "Starting..."}
                     </>
                   ) : (
                     action
