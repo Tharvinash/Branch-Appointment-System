@@ -89,7 +89,7 @@ export default function AddTechnicianModal({
   }, [open]);
 
   const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -119,7 +119,7 @@ export default function AddTechnicianModal({
   };
 
   const handleReasonChange = (reasonId: string) => {
-    if (reasonId) {
+    if (reasonId && reasonId !== "none") {
       setFormData((prev) => ({
         ...prev,
         reason: { id: parseInt(reasonId) },
@@ -182,9 +182,10 @@ export default function AddTechnicianModal({
         name: formData.name,
         status: formData.status,
         reason: formData.status === "ON_LEAVE" ? formData.reason : null,
-        jobSkills: selectedJobSkills.length > 0 
-          ? selectedJobSkills.map((id) => ({ id }))
-          : [],
+        jobSkills:
+          selectedJobSkills.length > 0
+            ? selectedJobSkills.map((id) => ({ id }))
+            : [],
       };
 
       const response = await technicianAPI.createTechnician(submitData);
@@ -221,7 +222,8 @@ export default function AddTechnicianModal({
         <DialogHeader>
           <DialogTitle>Add New Technician</DialogTitle>
           <DialogDescription>
-            Create a new technician account with name, status, reason, and job skills.
+            Create a new technician account with name, status, reason, and job
+            skills.
           </DialogDescription>
         </DialogHeader>
 
@@ -297,10 +299,11 @@ export default function AddTechnicianModal({
           {formData.status === "ON_LEAVE" && (
             <div className="space-y-2">
               <Label htmlFor="reason">
-                Reason for Leave <span className="text-gray-500">(Optional)</span>
+                Reason for Leave{" "}
+                <span className="text-gray-500">(Optional)</span>
               </Label>
               <Select
-                value={formData.reason?.id.toString() || ""}
+                value={formData.reason?.id.toString() || "none"}
                 onValueChange={handleReasonChange}
               >
                 <SelectTrigger
@@ -316,7 +319,7 @@ export default function AddTechnicianModal({
                   />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">None</SelectItem>
+                  <SelectItem value="none">None</SelectItem>
                   {reasons.map((reason) => (
                     <SelectItem key={reason.id} value={reason.id.toString()}>
                       {reason.reason}

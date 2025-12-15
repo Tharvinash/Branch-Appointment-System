@@ -274,6 +274,17 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
       if (endTimeError) newErrors.jobEndTime = endTimeError;
     }
 
+    // Validate end time is after start time
+    if (formData.jobStartTime && formData.jobEndTime) {
+      const endAfterStartError = bookingValidators.endTimeAfterStart(
+        formData.jobStartTime,
+        formData.jobEndTime
+      );
+      if (endAfterStartError) {
+        newErrors.jobEndTime = endAfterStartError;
+      }
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -283,6 +294,32 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
 
     if (!validateForm()) {
       return;
+    }
+
+    // Check for booking conflicts if both times and bay are provided
+    if (formData.jobStartTime && formData.jobEndTime && formData.bayId) {
+      setIsLoading(true);
+      try {
+        const conflictCheck = await bookingAPI.checkConflict(
+          formData.bayId,
+          formData.jobStartTime,
+          formData.jobEndTime,
+          booking.id
+        );
+
+        if (conflictCheck.hasConflict) {
+          setErrors((prev) => ({
+            ...prev,
+            jobStartTime: conflictCheck.message || "Time conflict detected",
+            jobEndTime: conflictCheck.message || "Time conflict detected",
+          }));
+          setIsLoading(false);
+          return;
+        }
+      } catch (error) {
+        // Continue with submission, backend will validate
+        console.error("Error checking conflict:", error);
+      }
     }
 
     setIsLoading(true);
@@ -305,10 +342,38 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
         onSuccess();
         handleClose();
       } else {
-        setApiError(response.message || "Failed to update booking");
+        // Check if error is about time validation or conflict
+        const errorMessage = response.message || "Failed to update booking";
+        if (
+          errorMessage.includes("time between 8:00 AM and 7:00 PM") ||
+          errorMessage.includes("conflicts with an existing booking")
+        ) {
+          setErrors((prev) => ({
+            ...prev,
+            jobStartTime: errorMessage,
+            jobEndTime: errorMessage,
+          }));
+        } else {
+          setApiError(errorMessage);
+        }
       }
     } catch (error) {
-      setApiError("An unexpected error occurred. Please try again.");
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "An unexpected error occurred. Please try again.";
+      if (
+        errorMessage.includes("time between 8:00 AM and 7:00 PM") ||
+        errorMessage.includes("conflicts with an existing booking")
+      ) {
+        setErrors((prev) => ({
+          ...prev,
+          jobStartTime: errorMessage,
+          jobEndTime: errorMessage,
+        }));
+      } else {
+        setApiError(errorMessage);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -590,22 +655,14 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
       if (endTimeError) errors.jobEndTime = endTimeError;
     }
 
-    // Validate that end time is after start time (only if both are valid)
-    if (
-      changeBayForm.jobStartTime &&
-      changeBayForm.jobEndTime &&
-      !errors.jobStartTime &&
-      !errors.jobEndTime
-    ) {
-      const [startHour, startMin] = changeBayForm.jobStartTime
-        .split(":")
-        .map(Number);
-      const [endHour, endMin] = changeBayForm.jobEndTime.split(":").map(Number);
-      const startMinutes = startHour * 60 + startMin;
-      const endMinutes = endHour * 60 + endMin;
-
-      if (endMinutes <= startMinutes) {
-        errors.jobEndTime = "End time must be after start time";
+    // Validate that end time is after start time
+    if (changeBayForm.jobStartTime && changeBayForm.jobEndTime) {
+      const endAfterStartError = bookingValidators.endTimeAfterStart(
+        changeBayForm.jobStartTime,
+        changeBayForm.jobEndTime
+      );
+      if (endAfterStartError) {
+        errors.jobEndTime = endAfterStartError;
       }
     }
 
@@ -614,9 +671,31 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
       return;
     }
 
+    // Check for booking conflicts
     setIsChangingBay(true);
     setChangeBayErrors({});
     setApiError("");
+
+    try {
+      const conflictCheck = await bookingAPI.checkConflict(
+        changeBayForm.bayId,
+        changeBayForm.jobStartTime,
+        changeBayForm.jobEndTime,
+        booking.id
+      );
+
+      if (conflictCheck.hasConflict) {
+        setChangeBayErrors({
+          jobStartTime: conflictCheck.message || "Time conflict detected",
+          jobEndTime: conflictCheck.message || "Time conflict detected",
+        });
+        setIsChangingBay(false);
+        return;
+      }
+    } catch (error) {
+      // Continue with submission, backend will validate
+      console.error("Error checking conflict:", error);
+    }
 
     try {
       // Format times to HH:mm:ss
@@ -650,14 +729,40 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
         await fetchTimeExtensions();
         onSuccess(); // Refresh booking data
       } else {
-        setChangeBayErrors({
-          general: response.message || "Failed to change bay",
-        });
+        // Check if error is about time validation or conflict
+        const errorMessage = response.message || "Failed to change bay";
+        if (
+          errorMessage.includes("time between 8:00 AM and 7:00 PM") ||
+          errorMessage.includes("conflicts with an existing booking")
+        ) {
+          setChangeBayErrors({
+            jobStartTime: errorMessage,
+            jobEndTime: errorMessage,
+          });
+        } else {
+          setChangeBayErrors({
+            general: errorMessage,
+          });
+        }
       }
     } catch (error) {
-      setChangeBayErrors({
-        general: "An unexpected error occurred. Please try again.",
-      });
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "An unexpected error occurred. Please try again.";
+      if (
+        errorMessage.includes("time between 8:00 AM and 7:00 PM") ||
+        errorMessage.includes("conflicts with an existing booking")
+      ) {
+        setChangeBayErrors({
+          jobStartTime: errorMessage,
+          jobEndTime: errorMessage,
+        });
+      } else {
+        setChangeBayErrors({
+          general: errorMessage,
+        });
+      }
     } finally {
       setIsChangingBay(false);
     }
@@ -783,11 +888,13 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
                       />
                     </SelectTrigger>
                     <SelectContent>
-                      {bays.map((bay) => (
-                        <SelectItem key={bay.id} value={bay.id.toString()}>
-                          {bay.name.name} (Bay {bay.number})
-                        </SelectItem>
-                      ))}
+                      {bays
+                        .filter((bay) => bay.status === "ACTIVE")
+                        .map((bay) => (
+                          <SelectItem key={bay.id} value={bay.id.toString()}>
+                            {bay.name.name} (Bay {bay.number})
+                          </SelectItem>
+                        ))}
                     </SelectContent>
                   </Select>
                   {errors.bayId && (
@@ -1417,11 +1524,13 @@ const BookingEditModal: React.FC<BookingEditModalProps> = ({
                   />
                 </SelectTrigger>
                 <SelectContent>
-                  {bays.map((bay) => (
-                    <SelectItem key={bay.id} value={bay.id.toString()}>
-                      {bay.name.name} (Bay {bay.number})
-                    </SelectItem>
-                  ))}
+                  {bays
+                    .filter((bay) => bay.status === "ACTIVE")
+                    .map((bay) => (
+                      <SelectItem key={bay.id} value={bay.id.toString()}>
+                        {bay.name.name} (Bay {bay.number})
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
               {changeBayErrors.bayId && (

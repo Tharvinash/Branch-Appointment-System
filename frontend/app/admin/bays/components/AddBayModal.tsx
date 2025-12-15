@@ -1,7 +1,13 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { CreateBayData, bayAPI, bayValidators, BayName } from "@/lib/api/bays";
+import {
+  CreateBayData,
+  bayAPI,
+  bayValidators,
+  BayName,
+  Bay,
+} from "@/lib/api/bays";
 import { technicianAPI, Technician } from "@/lib/api/technicians";
 import {
   Dialog,
@@ -44,13 +50,14 @@ export default function AddBayModal({
   const [apiError, setApiError] = useState("");
   const [bayNames, setBayNames] = useState<BayName[]>([]);
   const [technicians, setTechnicians] = useState<Technician[]>([]);
+  const [bays, setBays] = useState<Bay[]>([]);
   const [isLoadingBayNames, setIsLoadingBayNames] = useState(false);
   const [isLoadingTechnicians, setIsLoadingTechnicians] = useState(false);
   const [selectedTechnicianId, setSelectedTechnicianId] = useState<
     number | null
   >(null);
 
-  // Fetch bay names and technicians when modal opens
+  // Fetch bay names, technicians, and existing bays when modal opens
   useEffect(() => {
     const fetchData = async () => {
       if (open) {
@@ -63,13 +70,25 @@ export default function AddBayModal({
           } else {
             console.error(
               "Failed to fetch bay names:",
-              bayNamesResponse.message,
+              bayNamesResponse.message
             );
           }
         } catch (error) {
           console.error("Error fetching bay names:", error);
         } finally {
           setIsLoadingBayNames(false);
+        }
+
+        // Fetch existing bays to check which technicians are already assigned
+        try {
+          const baysResponse = await bayAPI.getAllBays();
+          if (baysResponse.success && baysResponse.data) {
+            setBays(baysResponse.data);
+          } else {
+            console.error("Failed to fetch bays:", baysResponse.message);
+          }
+        } catch (error) {
+          console.error("Error fetching bays:", error);
         }
 
         // Fetch technicians
@@ -81,7 +100,7 @@ export default function AddBayModal({
           } else {
             console.error(
               "Failed to fetch technicians:",
-              techniciansResponse.message,
+              techniciansResponse.message
             );
           }
         } catch (error) {
@@ -95,15 +114,33 @@ export default function AddBayModal({
     fetchData();
   }, [open]);
 
-  // Filter technicians by selected bay name skill
+  // Get IDs of technicians already assigned to bays
+  const getAssignedTechnicianIds = (): Set<number> => {
+    const assignedIds = new Set<number>();
+    bays.forEach((bay) => {
+      if (bay.technician?.id) {
+        assignedIds.add(bay.technician.id);
+      }
+    });
+    return assignedIds;
+  };
+
+  // Filter technicians by selected bay name skill and exclude already assigned technicians
   const getAvailableTechnicians = (): Technician[] => {
+    const assignedTechnicianIds = getAssignedTechnicianIds();
+
+    // First filter out technicians already assigned to other bays
+    let availableTechnicians = technicians.filter(
+      (technician) => !assignedTechnicianIds.has(technician.id)
+    );
+
     if (!formData.name || formData.name.id === 0) {
-      // If no bay name selected, show all technicians
-      return technicians;
+      // If no bay name selected, return all unassigned technicians
+      return availableTechnicians;
     }
 
     // Filter technicians who have the required skill (bay name)
-    return technicians.filter((technician) => {
+    return availableTechnicians.filter((technician) => {
       if (!technician.jobSkills || technician.jobSkills.length === 0) {
         return false;
       }
@@ -114,7 +151,7 @@ export default function AddBayModal({
   };
 
   const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -245,18 +282,22 @@ export default function AddBayModal({
               value={formData.name.id > 0 ? formData.name.id.toString() : ""}
               onValueChange={(value) => {
                 const selectedBayName = bayNames.find(
-                  (bayName) => bayName.id.toString() === value,
+                  (bayName) => bayName.id.toString() === value
                 );
                 if (selectedBayName) {
                   setFormData((prev) => ({ ...prev, name: selectedBayName }));
-                  
+
                   // Clear selected technician if they don't have the required skill
                   if (formData.technician) {
-                    const hasRequiredSkill = formData.technician.jobSkills?.some(
-                      (skill) => skill.id === selectedBayName.id
-                    );
+                    const hasRequiredSkill =
+                      formData.technician.jobSkills?.some(
+                        (skill) => skill.id === selectedBayName.id
+                      );
                     if (!hasRequiredSkill) {
-                      setFormData((prev) => ({ ...prev, technician: undefined }));
+                      setFormData((prev) => ({
+                        ...prev,
+                        technician: undefined,
+                      }));
                       setSelectedTechnicianId(null);
                     }
                   }
@@ -359,7 +400,7 @@ export default function AddBayModal({
                     const technicianId = value ? parseInt(value) : null;
                     setSelectedTechnicianId(technicianId);
                     const selectedTechnician = technicians.find(
-                      (t) => t.id === technicianId,
+                      (t) => t.id === technicianId
                     );
                     setFormData((prev) => ({
                       ...prev,
@@ -398,22 +439,25 @@ export default function AddBayModal({
                           value={technician.id.toString()}
                         >
                           {technician.name} ({technician.status})
-                          {technician.jobSkills && technician.jobSkills.length > 0 && (
-                            <span className="text-xs text-gray-500 ml-1">
-                              - {technician.jobSkills.length} skill(s)
-                            </span>
-                          )}
+                          {technician.jobSkills &&
+                            technician.jobSkills.length > 0 && (
+                              <span className="text-xs text-gray-500 ml-1">
+                                - {technician.jobSkills.length} skill(s)
+                              </span>
+                            )}
                         </SelectItem>
                       ))
                     )}
                   </SelectContent>
                 </Select>
-                {getAvailableTechnicians().length === 0 && formData.name.id > 0 && (
-                  <p className="text-sm text-amber-600">
-                    No technicians have the required skill "{formData.name.name}". 
-                    Please assign this skill to a technician first.
-                  </p>
-                )}
+                {getAvailableTechnicians().length === 0 &&
+                  formData.name.id > 0 && (
+                    <p className="text-sm text-amber-600">
+                      No technicians have the required skill "
+                      {formData.name.name}". Please assign this skill to a
+                      technician first.
+                    </p>
+                  )}
                 {errors.technician && (
                   <p className="text-sm text-red-600">{errors.technician}</p>
                 )}

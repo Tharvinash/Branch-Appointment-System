@@ -147,15 +147,48 @@ export interface ApiResponse<T> {
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080";
 
-// API call helper
+// Refresh token helper
+async function refreshAccessToken(): Promise<string | null> {
+  const refreshToken = tokenManager.getRefreshToken();
+  if (!refreshToken) {
+    return null;
+  }
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ refreshToken }),
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const data = await response.json();
+    if (data.accessToken) {
+      tokenManager.setToken(data.accessToken);
+      return data.accessToken;
+    }
+    return null;
+  } catch (error) {
+    console.error("Error refreshing token:", error);
+    return null;
+  }
+}
+
+// API call helper with auto-refresh on 401/403
 async function apiCall<T>(
   endpoint: string,
   data: any,
-  method: "POST" | "GET" | "PUT" | "PATCH" | "DELETE" = "POST"
+  method: "POST" | "GET" | "PUT" | "PATCH" | "DELETE" = "POST",
+  retryOnAuth = true
 ): Promise<T> {
   const token = tokenManager.getToken();
 
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+  let response = await fetch(`${API_BASE_URL}${endpoint}`, {
     method,
     headers: {
       "Content-Type": "application/json",
@@ -163,6 +196,29 @@ async function apiCall<T>(
     },
     body: method !== "GET" ? JSON.stringify(data) : undefined,
   });
+
+  // Handle 401/403 with auto-refresh
+  if ((response.status === 401 || response.status === 403) && retryOnAuth) {
+    const newToken = await refreshAccessToken();
+    if (newToken) {
+      // Retry the original request with new token
+      response = await fetch(`${API_BASE_URL}${endpoint}`, {
+        method,
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${newToken}`,
+        },
+        body: method !== "GET" ? JSON.stringify(data) : undefined,
+      });
+    } else {
+      // Refresh failed, logout user
+      tokenManager.removeToken();
+      if (typeof window !== "undefined") {
+        window.location.href = "/login";
+      }
+      throw new Error("Session expired. Please login again.");
+    }
+  }
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({
@@ -382,6 +438,43 @@ export const bookingAPI = {
     }
   },
 
+  // Check booking conflict
+  checkConflict: async (
+    bayId: number,
+    jobStartTime: string,
+    jobEndTime: string,
+    excludeBookingId?: number
+  ): Promise<{ hasConflict: boolean; message: string | null }> => {
+    try {
+      // Format times to HH:mm:ss
+      const startTimeParts = jobStartTime.split(":");
+      const endTimeParts = jobEndTime.split(":");
+      const formattedStartTime = startTimeParts.length >= 2 
+        ? `${startTimeParts[0]}:${startTimeParts[1]}:00` 
+        : `${jobStartTime}:00`;
+      const formattedEndTime = endTimeParts.length >= 2 
+        ? `${endTimeParts[0]}:${endTimeParts[1]}:00` 
+        : `${jobEndTime}:00`;
+
+      const response = await apiCall<{ hasConflict: boolean; message: string | null }>(
+        "/bookings/check-conflict",
+        {
+          bayId,
+          jobStartTime: formattedStartTime,
+          jobEndTime: formattedEndTime,
+          excludeBookingId: excludeBookingId || null,
+        },
+        "POST"
+      );
+      return response;
+    } catch (error) {
+      return {
+        hasConflict: false,
+        message: null,
+      };
+    }
+  },
+
   // Get stoppage reasons
   getStoppageReasons: async (): Promise<StoppageReasonsResponse> => {
     try {
@@ -431,10 +524,14 @@ export const bookingAPI = {
         }
 
         // Update the booking with new status (NEXT_JOB) and bayId
+        // Preserve jobStartTime and jobEndTime if they exist
         const updateData: UpdateBookingRequest = {
           ...currentBooking.data,
           status: "NEXT_JOB",
           bayId: bayId,
+          // Explicitly preserve times if they exist
+          jobStartTime: currentBooking.data.jobStartTime,
+          jobEndTime: currentBooking.data.jobEndTime,
         };
 
         const response = await bookingAPI.updateBooking(bookingId, updateData);
@@ -472,10 +569,14 @@ export const bookingAPI = {
         }
 
         // Update the booking with new status
+        // Preserve jobStartTime and jobEndTime if they exist
         const updateData: UpdateBookingRequest = {
           ...currentBooking.data,
           status: "NEXT_JOB",
           bayId: bayId,
+          // Explicitly preserve times if they exist
+          jobStartTime: currentBooking.data.jobStartTime,
+          jobEndTime: currentBooking.data.jobEndTime,
         };
 
         const response = await bookingAPI.updateBooking(bookingId, updateData);
@@ -920,9 +1021,73 @@ export const bookingValidators = {
     const maxMinutes = 19 * 60; // 19:00
 
     if (totalMinutes < minMinutes || totalMinutes > maxMinutes) {
-      return `${fieldName} must be between 08:00 and 19:00`;
+      return "Please choose a time between 8:00 AM and 7:00 PM.";
     }
 
     return null;
   },
+
+  endTimeAfterStart: (startTime: string, endTime: string): string | null => {
+    if (!startTime || !endTime) return null; // Both must be provided
+    
+    const startStr = startTime.length >= 5 ? startTime.slice(0, 5) : startTime;
+    const endStr = endTime.length >= 5 ? endTime.slice(0, 5) : endTime;
+    
+    const [startHour, startMin] = startStr.split(":").map(Number);
+    const [endHour, endMin] = endStr.split(":").map(Number);
+    
+    const startMinutes = startHour * 60 + startMin;
+    const endMinutes = endHour * 60 + endMin;
+    
+    if (endMinutes <= startMinutes) {
+      return "Job end time must be after job start time.";
+    }
+    
+    return null;
+  },
+};
+
+// Check for booking conflicts
+export const checkBookingConflict = async (
+  bayId: number,
+  jobStartTime: string,
+  jobEndTime: string,
+  excludeBookingId?: number
+): Promise<string | null> => {
+  if (!bayId || !jobStartTime || !jobEndTime) {
+    return null; // Can't check without all required fields
+  }
+
+  try {
+    // Format times to HH:mm:ss
+    const startTimeParts = jobStartTime.split(":");
+    const endTimeParts = jobEndTime.split(":");
+    const formattedStartTime = startTimeParts.length >= 2 
+      ? `${startTimeParts[0]}:${startTimeParts[1]}:00` 
+      : `${jobStartTime}:00`;
+    const formattedEndTime = endTimeParts.length >= 2 
+      ? `${endTimeParts[0]}:${endTimeParts[1]}:00` 
+      : `${jobEndTime}:00`;
+
+    const response = await apiCall<{ hasConflict: boolean; message: string | null }>(
+      "/bookings/check-conflict",
+      {
+        bayId,
+        jobStartTime: formattedStartTime,
+        jobEndTime: formattedEndTime,
+        excludeBookingId: excludeBookingId || null,
+      },
+      "POST"
+    );
+
+    if (response.hasConflict) {
+      return response.message || "The selected time conflicts with an existing booking for this bay. Please choose another time.";
+    }
+
+    return null;
+  } catch (error) {
+    // If check fails, return null (don't block form submission, backend will validate)
+    console.error("Error checking booking conflict:", error);
+    return null;
+  }
 };

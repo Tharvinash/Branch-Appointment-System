@@ -115,6 +115,17 @@ const AddBookingModal: React.FC<AddBookingModalProps> = ({
       if (endTimeError) newErrors.jobEndTime = endTimeError;
     }
 
+    // Validate end time is after start time
+    if (formData.jobStartTime && formData.jobEndTime) {
+      const endAfterStartError = bookingValidators.endTimeAfterStart(
+        formData.jobStartTime,
+        formData.jobEndTime
+      );
+      if (endAfterStartError) {
+        newErrors.jobEndTime = endAfterStartError;
+      }
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -124,6 +135,31 @@ const AddBookingModal: React.FC<AddBookingModalProps> = ({
 
     if (!validateForm()) {
       return;
+    }
+
+    // Check for booking conflicts if both times and bay are provided
+    if (formData.jobStartTime && formData.jobEndTime && formData.bayId) {
+      setIsLoading(true);
+      try {
+        const conflictCheck = await bookingAPI.checkConflict(
+          formData.bayId,
+          formData.jobStartTime,
+          formData.jobEndTime
+        );
+        
+        if (conflictCheck.hasConflict) {
+          setErrors((prev) => ({
+            ...prev,
+            jobStartTime: conflictCheck.message || "Time conflict detected",
+            jobEndTime: conflictCheck.message || "Time conflict detected",
+          }));
+          setIsLoading(false);
+          return;
+        }
+      } catch (error) {
+        // Continue with submission, backend will validate
+        console.error("Error checking conflict:", error);
+      }
     }
 
     setIsLoading(true);
@@ -146,10 +182,31 @@ const AddBookingModal: React.FC<AddBookingModalProps> = ({
         onSuccess();
         handleClose();
       } else {
-        setApiError(response.message || "Failed to create booking");
+        // Check if error is about time validation or conflict
+        const errorMessage = response.message || "Failed to create booking";
+        if (errorMessage.includes("time between 8:00 AM and 7:00 PM") ||
+            errorMessage.includes("conflicts with an existing booking")) {
+          setErrors((prev) => ({
+            ...prev,
+            jobStartTime: errorMessage,
+            jobEndTime: errorMessage,
+          }));
+        } else {
+          setApiError(errorMessage);
+        }
       }
     } catch (error) {
-      setApiError("An unexpected error occurred. Please try again.");
+      const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred. Please try again.";
+      if (errorMessage.includes("time between 8:00 AM and 7:00 PM") ||
+          errorMessage.includes("conflicts with an existing booking")) {
+        setErrors((prev) => ({
+          ...prev,
+          jobStartTime: errorMessage,
+          jobEndTime: errorMessage,
+        }));
+      } else {
+        setApiError(errorMessage);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -367,11 +424,13 @@ const AddBookingModal: React.FC<AddBookingModalProps> = ({
                   />
                 </SelectTrigger>
                 <SelectContent>
-                  {bays.map((bay) => (
-                    <SelectItem key={bay.id} value={bay.id.toString()}>
-                      {bay.name.name} (Bay {bay.number})
-                    </SelectItem>
-                  ))}
+                  {bays
+                    .filter((bay) => bay.status === "ACTIVE")
+                    .map((bay) => (
+                      <SelectItem key={bay.id} value={bay.id.toString()}>
+                        {bay.name.name} (Bay {bay.number})
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
               {errors.bayId && (

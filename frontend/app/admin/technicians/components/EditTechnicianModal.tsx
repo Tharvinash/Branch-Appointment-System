@@ -107,11 +107,14 @@ export default function EditTechnicianModal({
           ? technician.jobSkills.map((skill) => skill.id)
           : []
       );
+      // Clear any previous errors when technician data loads
+      setErrors({});
+      setApiError("");
     }
   }, [technician]);
 
   const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -136,7 +139,7 @@ export default function EditTechnicianModal({
   };
 
   const handleReasonChange = (reasonId: string) => {
-    if (reasonId) {
+    if (reasonId && reasonId !== "none") {
       setFormData((prev) => ({
         ...prev,
         reason: { id: parseInt(reasonId) },
@@ -198,25 +201,35 @@ export default function EditTechnicianModal({
       const submitData: UpdateTechnicianData = {
         name: formData.name,
         status: formData.status,
-        reason: formData.status === "ON_LEAVE" ? formData.reason : null,
-        jobSkills: selectedJobSkills.length > 0
-          ? selectedJobSkills.map((id) => ({ id }))
-          : [],
+        // Send reason only if status is ON_LEAVE (can be null if not selected)
+        reason: formData.status === "ON_LEAVE" ? formData.reason || null : null,
+        jobSkills:
+          selectedJobSkills.length > 0
+            ? selectedJobSkills.map((id) => ({ id }))
+            : [],
       };
+
+      console.log("Submitting technician update:", submitData);
 
       const response = await technicianAPI.updateTechnician(
         technician.id,
-        submitData,
+        submitData
       );
 
       if (response.success) {
         onSuccess();
         handleClose();
       } else {
+        console.error("Update failed:", response);
         setApiError(response.message || "Failed to update technician");
       }
     } catch (error) {
-      setApiError("An unexpected error occurred. Please try again.");
+      console.error("Error updating technician:", error);
+      setApiError(
+        error instanceof Error
+          ? error.message
+          : "An unexpected error occurred. Please try again."
+      );
     } finally {
       setIsLoading(false);
     }
@@ -326,10 +339,11 @@ export default function EditTechnicianModal({
           {formData.status === "ON_LEAVE" && (
             <div className="space-y-2">
               <Label htmlFor="reason">
-                Reason for Leave <span className="text-gray-500">(Optional)</span>
+                Reason for Leave{" "}
+                <span className="text-gray-500">(Optional)</span>
               </Label>
               <Select
-                value={formData.reason?.id.toString() || ""}
+                value={formData.reason?.id.toString() || "none"}
                 onValueChange={handleReasonChange}
               >
                 <SelectTrigger
@@ -345,7 +359,7 @@ export default function EditTechnicianModal({
                   />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">None</SelectItem>
+                  <SelectItem value="none">None</SelectItem>
                   {reasons.map((reason) => (
                     <SelectItem key={reason.id} value={reason.id.toString()}>
                       {reason.reason}

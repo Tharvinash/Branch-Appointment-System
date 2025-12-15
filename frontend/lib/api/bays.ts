@@ -53,11 +53,44 @@ export interface ApiResponse<T> {
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080";
 
-// API call helper
+// Refresh token helper
+async function refreshAccessToken(): Promise<string | null> {
+  const refreshToken = tokenManager.getRefreshToken();
+  if (!refreshToken) {
+    return null;
+  }
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ refreshToken }),
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const data = await response.json();
+    if (data.accessToken) {
+      tokenManager.setToken(data.accessToken);
+      return data.accessToken;
+    }
+    return null;
+  } catch (error) {
+    console.error("Error refreshing token:", error);
+    return null;
+  }
+}
+
+// API call helper with auto-refresh on 401/403
 async function apiCall<T>(
   endpoint: string,
   data?: any,
   method: "GET" | "POST" | "PUT" | "DELETE" = "GET",
+  retryOnAuth = true,
 ): Promise<ApiResponse<T>> {
   const token = tokenManager.getToken();
 
@@ -69,7 +102,7 @@ async function apiCall<T>(
   }
 
   try {
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    let response = await fetch(`${API_BASE_URL}${endpoint}`, {
       method,
       headers: {
         "Content-Type": "application/json",
@@ -77,6 +110,32 @@ async function apiCall<T>(
       },
       body: data ? JSON.stringify(data) : undefined,
     });
+
+    // Handle 401/403 with auto-refresh
+    if ((response.status === 401 || response.status === 403) && retryOnAuth) {
+      const newToken = await refreshAccessToken();
+      if (newToken) {
+        // Retry the original request with new token
+        response = await fetch(`${API_BASE_URL}${endpoint}`, {
+          method,
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${newToken}`,
+          },
+          body: data ? JSON.stringify(data) : undefined,
+        });
+      } else {
+        // Refresh failed, logout user
+        tokenManager.removeToken();
+        if (typeof window !== "undefined") {
+          window.location.href = "/login";
+        }
+        return {
+          success: false,
+          message: "Session expired. Please login again.",
+        };
+      }
+    }
 
     if (response.status === 204) {
       return { success: true } as ApiResponse<T>; // no body to parse
