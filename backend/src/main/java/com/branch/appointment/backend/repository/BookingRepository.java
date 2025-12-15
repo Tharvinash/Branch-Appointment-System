@@ -1,6 +1,7 @@
 package com.branch.appointment.backend.repository;
 
 import com.branch.appointment.backend.entity.BookingEntity;
+import com.branch.appointment.backend.enums.BookingStatusEnum;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -14,10 +15,12 @@ public interface BookingRepository extends JpaRepository<BookingEntity, Long> {
   
   /**
    * Find bookings for a specific bay that have time conflicts with the given time range.
+   * Only checks bookings with status ACTIVE_BOARD.
    * Excludes the booking with the given bookingId (for updates).
    * Only checks bookings that have both start and end times set.
    */
   @Query("SELECT b FROM BookingEntity b WHERE b.bay.id = :bayId " +
+         "AND b.status = :status " +
          "AND b.jobStartTime IS NOT NULL AND b.jobEndTime IS NOT NULL " +
          "AND (:bookingId IS NULL OR b.id != :bookingId) " +
          "AND ((b.jobStartTime < :endTime AND b.jobEndTime > :startTime))")
@@ -25,7 +28,8 @@ public interface BookingRepository extends JpaRepository<BookingEntity, Long> {
       @Param("bayId") Long bayId,
       @Param("startTime") LocalTime startTime,
       @Param("endTime") LocalTime endTime,
-      @Param("bookingId") Long bookingId
+      @Param("bookingId") Long bookingId,
+      @Param("status") BookingStatusEnum status
   );
 }
 

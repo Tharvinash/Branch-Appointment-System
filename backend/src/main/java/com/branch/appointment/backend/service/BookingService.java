@@ -429,6 +429,7 @@ public class BookingService {
 
   /**
    * Check if there's a booking conflict for the given bay and time range.
+   * Only checks bookings with status ACTIVE_BOARD.
    */
   public CheckConflictResponse checkBookingConflict(Long bayId, LocalTime startTime, LocalTime endTime, Long excludeBookingId) {
     if (bayId == null || startTime == null || endTime == null) {
@@ -436,7 +437,7 @@ public class BookingService {
     }
 
     List<BookingEntity> conflictingBookings = bookingRepository.findConflictingBookings(
-        bayId, startTime, endTime, excludeBookingId
+        bayId, startTime, endTime, excludeBookingId, BookingStatusEnum.ACTIVE_BOARD
     );
 
     if (!conflictingBookings.isEmpty()) {
@@ -475,11 +476,12 @@ public class BookingService {
 
   /**
    * Validates that there are no booking conflicts for the given bay and time range.
+   * Only checks bookings with status ACTIVE_BOARD.
    * Excludes the booking with the given bookingId (for updates).
    */
   private void validateNoBookingConflict(Long bayId, LocalTime startTime, LocalTime endTime, Long excludeBookingId) {
     List<BookingEntity> conflictingBookings = bookingRepository.findConflictingBookings(
-        bayId, startTime, endTime, excludeBookingId
+        bayId, startTime, endTime, excludeBookingId, BookingStatusEnum.ACTIVE_BOARD
     );
 
     if (!conflictingBookings.isEmpty()) {
