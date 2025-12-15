@@ -77,20 +77,21 @@ public class TechnicianService {
     entity.setName(dto.getName());
     entity.setStatus(dto.getStatus());
     
-    // If status is AVAILABLE, set reason to null
+    // Handle reason based on status
     if (dto.getStatus() == TechnicianStatusEnum.AVAILABLE) {
+      // If status is AVAILABLE, always set reason to null
       entity.setReason(null);
-    } 
-    // If status is ON_LEAVE and reason is provided, set the reason
-    else if (dto.getStatus() == TechnicianStatusEnum.ON_LEAVE && dto.getReason() != null && dto.getReason().getId() != null) {
-      ReasonEntity reason = reasonRepository.findById(dto.getReason().getId())
-          .orElseThrow(() -> new RuntimeException("Reason not found with id: " + dto.getReason().getId()));
-      entity.setReason(reason);
-    }
-    // If status is ON_LEAVE but no reason provided, keep existing reason (or set to null if updating from AVAILABLE)
-    else if (dto.getStatus() == TechnicianStatusEnum.ON_LEAVE && (dto.getReason() == null || dto.getReason().getId() == null)) {
-      // Keep existing reason if it exists, otherwise null
-      // This allows updating name/status without changing reason
+    } else if (dto.getStatus() == TechnicianStatusEnum.ON_LEAVE) {
+      // If status is ON_LEAVE and reason is provided, set the reason
+      if (dto.getReason() != null && dto.getReason().getId() != null) {
+        ReasonEntity reason = reasonRepository.findById(dto.getReason().getId())
+            .orElseThrow(() -> new RuntimeException("Reason not found with id: " + dto.getReason().getId()));
+        entity.setReason(reason);
+      } else {
+        // If status is ON_LEAVE but no reason provided, keep existing reason if it exists
+        // This allows updating name/status without changing reason, or setting ON_LEAVE without reason
+        // The reason field remains as is (could be null or existing value)
+      }
     }
     
     // Update job skills

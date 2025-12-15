@@ -9,6 +9,8 @@ import com.branch.appointment.backend.entity.TechnicianEntity;
 import com.branch.appointment.backend.entity.UserEntity;
 import com.branch.appointment.backend.enums.ServiceAdvisorStatusEnum;
 import com.branch.appointment.backend.enums.TechnicianStatusEnum;
+import com.branch.appointment.backend.entity.RefreshTokenEntity;
+import com.branch.appointment.backend.repository.RefreshTokenRepository;
 import com.branch.appointment.backend.repository.ServiceAdvisorRepository;
 import com.branch.appointment.backend.repository.TechnicianRepository;
 import com.branch.appointment.backend.repository.UserRepository;
@@ -19,6 +21,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.security.SecureRandom;
+import java.time.LocalDateTime;
+import java.util.Base64;
 
 @Slf4j
 @Service
@@ -29,8 +36,12 @@ public class AuthService {
   private final TechnicianRepository technicianRepository;
   private final ServiceAdvisorRepository serviceAdvisorRepository;
   private final PasswordEncoder passwordEncoder;
+  private final RefreshTokenRepository refreshTokenRepository;
   @Autowired
   private TokenGeneration tokenGeneration;
+
+  private static final int REFRESH_TOKEN_EXPIRATION_DAYS = 30;
+  private static final SecureRandom secureRandom = new SecureRandom();
 
   public RegisterResponse registerUser(RegisterUserDto userInfo) {
     log.info("Register request for user: {}", userInfo.getEmail());
@@ -73,6 +84,7 @@ public class AuthService {
     );
   }
 
+  @Transactional
   public LoginResponse loginUser(LoginUserDto userInfo) {
     log.info("Login attempt for user: {}", userInfo.getEmail());
 
@@ -81,14 +93,56 @@ public class AuthService {
       throw new RuntimeException("Username or Password does not match");
     }
 
-    String token = tokenGeneration.generateToken(user);
+    // Generate access token
+    String accessToken = tokenGeneration.generateToken(user);
+
+    // Invalidate old refresh tokens for this user (one token per user)
+    refreshTokenRepository.deleteByUser(user);
+
+    // Generate and save new refresh token
+    String refreshToken = generateRefreshToken();
+    RefreshTokenEntity refreshTokenEntity = new RefreshTokenEntity();
+    refreshTokenEntity.setToken(refreshToken);
+    refreshTokenEntity.setUser(user);
+    refreshTokenEntity.setCreatedAt(LocalDateTime.now());
+    refreshTokenEntity.setExpiresAt(LocalDateTime.now().plusDays(REFRESH_TOKEN_EXPIRATION_DAYS));
+    refreshTokenRepository.save(refreshTokenEntity);
+
     return new LoginResponse(
-        token,
+        accessToken,
+        refreshToken,
         user.getUserId(),
         user.getName(),
         user.getEmail(),
-        user.getRole().name() // assuming enum
+        user.getRole().name()
     );
+  }
 
+  @Transactional
+  public String refreshAccessToken(String refreshToken) {
+    RefreshTokenEntity tokenEntity = refreshTokenRepository.findByToken(refreshToken)
+        .orElseThrow(() -> new RuntimeException("Invalid refresh token"));
+
+    // Check if token is expired
+    if (tokenEntity.getExpiresAt().isBefore(LocalDateTime.now())) {
+      refreshTokenRepository.delete(tokenEntity);
+      throw new RuntimeException("Refresh token has expired");
+    }
+
+    // Generate new access token
+    UserEntity user = tokenEntity.getUser();
+    return tokenGeneration.generateToken(user);
+  }
+
+  @Transactional
+  public void logout(String refreshToken) {
+    refreshTokenRepository.findByToken(refreshToken)
+        .ifPresent(refreshTokenRepository::delete);
+  }
+
+  private String generateRefreshToken() {
+    byte[] randomBytes = new byte[32];
+    secureRandom.nextBytes(randomBytes);
+    return Base64.getUrlEncoder().withoutPadding().encodeToString(randomBytes);
   }
 }

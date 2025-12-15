@@ -2,6 +2,8 @@ package com.branch.appointment.backend.controller;
 
 import com.branch.appointment.backend.dto.BookingDto;
 import com.branch.appointment.backend.dto.BookingProcessDto;
+import com.branch.appointment.backend.dto.CheckConflictRequest;
+import com.branch.appointment.backend.dto.CheckConflictResponse;
 import com.branch.appointment.backend.dto.ReasonForStoppageDto;
 import com.branch.appointment.backend.dto.TimeExtensionDto;
 import com.branch.appointment.backend.service.BookingService;
@@ -99,6 +101,16 @@ public class BookingController {
     String delayReason = request.get("delayReason");
     bookingService.updateDelayReason(id, delayReason);
     return ResponseEntity.ok().build();
+  }
+
+  @PostMapping("/check-conflict")
+  public ResponseEntity<CheckConflictResponse> checkConflict(@RequestBody CheckConflictRequest request) {
+    return ResponseEntity.ok(bookingService.checkBookingConflict(
+        request.getBayId(),
+        request.getJobStartTime(),
+        request.getJobEndTime(),
+        request.getExcludeBookingId()
+    ));
   }
 }
 

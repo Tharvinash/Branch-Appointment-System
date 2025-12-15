@@ -21,6 +21,8 @@ import java.time.LocalTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import com.branch.appointment.backend.exception.BadRequestException;
+
 @Service
 @AllArgsConstructor
 @Slf4j
@@ -48,12 +50,24 @@ public class BookingService {
 
 
   public BookingDto createBooking(BookingDto dto) {
+    // Validate times if provided
+    if (dto.getJobStartTime() != null || dto.getJobEndTime() != null) {
+      validateTimes(dto.getJobStartTime(), dto.getJobEndTime());
+      
+      // Check for booking conflicts if both times are provided
+      if (dto.getJobStartTime() != null && dto.getJobEndTime() != null && dto.getBayId() != null) {
+        validateNoBookingConflict(dto.getBayId(), dto.getJobStartTime(), dto.getJobEndTime(), null);
+      }
+    }
+
     BookingEntity booking = new BookingEntity();
     booking.setCarRegNo(dto.getCarRegNo());
     booking.setCheckinDate(dto.getCheckinDate());
     booking.setPromiseDate(dto.getPromiseDate());
     booking.setJobType(dto.getJobType());
     booking.setStatus(BookingStatusEnum.QUEUING);
+    booking.setJobStartTime(dto.getJobStartTime());
+    booking.setJobEndTime(dto.getJobEndTime());
 
     // ✅ Fetch ServiceAdvisorEntity from DB
     ServiceAdvisorEntity advisor = serviceAdvisorRepository.findById(dto.getServiceAdvisorId())
@@ -91,10 +105,28 @@ public class BookingService {
     BookingStatusEnum oldStatus = booking.getStatus();
     Long oldBayId = booking.getBay() != null ? booking.getBay().getId() : null;
 
-    if (dto.getJobStartTime() != null) {
-      booking.setJobStartTime(dto.getJobStartTime());
-      booking.setJobEndTime(dto.getJobEndTime());
+    // Update times only if explicitly provided in DTO, otherwise preserve existing times
+    if (dto.getJobStartTime() != null || dto.getJobEndTime() != null) {
+      // Validate times
+      validateTimes(dto.getJobStartTime(), dto.getJobEndTime());
+      
+      // Check for booking conflicts if both times are provided
+      Long bayIdToCheck = dto.getBayId() != null ? dto.getBayId() : 
+                          (booking.getBay() != null ? booking.getBay().getId() : null);
+      
+      if (dto.getJobStartTime() != null && dto.getJobEndTime() != null && bayIdToCheck != null) {
+        validateNoBookingConflict(bayIdToCheck, dto.getJobStartTime(), dto.getJobEndTime(), booking.getId());
+      }
+      
+      // Only update times that are explicitly provided, preserve others
+      if (dto.getJobStartTime() != null) {
+        booking.setJobStartTime(dto.getJobStartTime());
+      }
+      if (dto.getJobEndTime() != null) {
+        booking.setJobEndTime(dto.getJobEndTime());
+      }
     }
+    // If times are not provided in DTO, existing times are preserved (no else block needed)
 
     // Update bay if provided
     if (dto.getBayId() != null && !dto.getBayId().equals(oldBayId)) {
@@ -393,6 +425,66 @@ public class BookingService {
         .stream()
         .map(s -> new ReasonForStoppageDto(s.getId(), s.getReasonName()))
         .toList();
+  }
+
+  /**
+   * Check if there's a booking conflict for the given bay and time range.
+   */
+  public CheckConflictResponse checkBookingConflict(Long bayId, LocalTime startTime, LocalTime endTime, Long excludeBookingId) {
+    if (bayId == null || startTime == null || endTime == null) {
+      return new CheckConflictResponse(false, null);
+    }
+
+    List<BookingEntity> conflictingBookings = bookingRepository.findConflictingBookings(
+        bayId, startTime, endTime, excludeBookingId
+    );
+
+    if (!conflictingBookings.isEmpty()) {
+      return new CheckConflictResponse(true, "The selected time conflicts with an existing booking for this bay. Please choose another time.");
+    }
+
+    return new CheckConflictResponse(false, null);
+  }
+
+  /**
+   * Validates that times are within the allowed window (8:00 AM - 7:00 PM)
+   * and that end time is after start time.
+   */
+  private void validateTimes(LocalTime startTime, LocalTime endTime) {
+    LocalTime minTime = LocalTime.of(8, 0); // 8:00 AM
+    LocalTime maxTime = LocalTime.of(19, 0); // 7:00 PM
+
+    if (startTime != null) {
+      if (startTime.isBefore(minTime) || startTime.isAfter(maxTime)) {
+        throw new BadRequestException("Please choose a time between 8:00 AM and 7:00 PM.");
+      }
+    }
+
+    if (endTime != null) {
+      if (endTime.isBefore(minTime) || endTime.isAfter(maxTime)) {
+        throw new BadRequestException("Please choose a time between 8:00 AM and 7:00 PM.");
+      }
+    }
+
+    if (startTime != null && endTime != null) {
+      if (!endTime.isAfter(startTime)) {
+        throw new BadRequestException("Job end time must be after job start time.");
+      }
+    }
+  }
+
+  /**
+   * Validates that there are no booking conflicts for the given bay and time range.
+   * Excludes the booking with the given bookingId (for updates).
+   */
+  private void validateNoBookingConflict(Long bayId, LocalTime startTime, LocalTime endTime, Long excludeBookingId) {
+    List<BookingEntity> conflictingBookings = bookingRepository.findConflictingBookings(
+        bayId, startTime, endTime, excludeBookingId
+    );
+
+    if (!conflictingBookings.isEmpty()) {
+      throw new BadRequestException("The selected time conflicts with an existing booking for this bay. Please choose another time.");
+    }
   }
 }
 

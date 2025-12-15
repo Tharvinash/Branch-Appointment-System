@@ -2,6 +2,9 @@ package com.branch.appointment.backend.controller;
 
 import com.branch.appointment.backend.dto.LoginResponse;
 import com.branch.appointment.backend.dto.LoginUserDto;
+import com.branch.appointment.backend.dto.LogoutRequest;
+import com.branch.appointment.backend.dto.RefreshTokenRequest;
+import com.branch.appointment.backend.dto.RefreshTokenResponse;
 import com.branch.appointment.backend.dto.RegisterResponse;
 import com.branch.appointment.backend.dto.RegisterUserDto;
 import com.branch.appointment.backend.service.AuthService;
@@ -33,5 +36,21 @@ public class AuthController {
   public ResponseEntity<LoginResponse> loginUser(@RequestBody LoginUserDto userInfo) {
     LoginResponse response = authService.loginUser(userInfo);
     return ResponseEntity.ok(response);
+  }
+
+  @PostMapping("/refresh")
+  public ResponseEntity<RefreshTokenResponse> refreshToken(@RequestBody RefreshTokenRequest request) {
+    try {
+      String newAccessToken = authService.refreshAccessToken(request.getRefreshToken());
+      return ResponseEntity.ok(new RefreshTokenResponse(newAccessToken));
+    } catch (RuntimeException e) {
+      return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+    }
+  }
+
+  @PostMapping("/logout")
+  public ResponseEntity<Void> logout(@RequestBody LogoutRequest request) {
+    authService.logout(request.getRefreshToken());
+    return ResponseEntity.ok().build();
   }
 }
